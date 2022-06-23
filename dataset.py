@@ -12,9 +12,11 @@ import Log
 import utils
 
 import gc
+import io
 
 
 
+debug = False
 
 
 def is_older_than(filename, minutes):
@@ -36,43 +38,46 @@ def download_aviationweather_csv(filename, debug_header_size = 5):
 
     output_list = []
 
-    if is_older_than('download/' + input_filename, minutes=2.5): 
-        Log.Write('downloading from %s' % url)
-        response = requests.get(url)
-        Log.Write('response status code = ' + str(response.status_code))
-        if response.status_code != 200:
-            raise Exception("Invalid status code")
-        response = response.content.decode('utf-8')
+    #as multiple processes can be spawned, the files are no longer saved. 
+    #TODO move download to some separate task
+    #if is_older_than('download/' + input_filename, minutes=2.5): 
+    Log.Write('downloading from %s' % url)
+    response = requests.get(url)
+    Log.Write('response status code = ' + str(response.status_code))
+    if response.status_code != 200:
+        raise Exception("Invalid status code")
 
-        #default debug header:
-        #No errors
-        #No warnings
-        #474 ms
-        #data source=metars
-        #4809 results
+    response = response.content.decode('utf-8')
+    #default debug header:
+    #No errors
+    #No warnings
+    #474 ms
+    #data source=metars
+    #4809 results
 
-        n = -1
-        for i in range(0,5):
-            n = response.index('\n', n+1)
-        debug_header = response[0:n]
+    n = -1
+    for i in range(0,5):
+        n = response.index('\n', n+1)
+    debug_header = response[0:n]
 
-        response = response[n+1:]
+    response = response[n+1:]
 
-        Log.Write(debug_header)
+    Log.Write(debug_header)
 
-        with open('download/' + input_filename, 'wb') as f:
-            f.write(response.encode('utf-8'))
+    #with open('download/' + input_filename, 'wb') as f:
+    #    f.write(response.encode('utf-8'))
 
     # extract raw_text
-    with open('download/' + input_filename, 'r', encoding='utf-8') as f, open('download/' + output_filename, 'w', newline='\n', encoding='utf-8') as f_out:
-        rows = csv.reader(f)
+    #with open('download/' + input_filename, 'r', encoding='utf-8') as f, open('download/' + output_filename, 'w', newline='\n', encoding='utf-8') as f_out:
+    #rows = csv.reader(f)
+    rows = csv.reader(io.StringIO(response))
 
-        #skip header row
-        next(rows)
+    #skip header row
+    next(rows)
 
-        for row in rows:
-            output_list.append(row[0])
-            f_out.write('%s\n' % row[0])
+    for row in rows:
+        output_list.append(row[0])
+        #f_out.write('%s\n' % row[0])
 
     output_list.sort()
     return output_list
@@ -87,21 +92,23 @@ def download_ourairports_csv(filename):
 
     output_list = []
 
-    if is_older_than('download/' + input_filename, minutes=60): 
-        Log.Write('downloading from %s' % url)
-        response = requests.get(url)
-        Log.Write('response status code = ' + str(response.status_code))
-        if response.status_code != 200:
-            raise Exception("Invalid status code")
+    #if is_older_than('download/' + input_filename, minutes=60): 
+    Log.Write('downloading from %s' % url)
+    response = requests.get(url)
+    Log.Write('response status code = ' + str(response.status_code))
+    if response.status_code != 200:
+        raise Exception("Invalid status code")
 
-        with open('download/' + input_filename, 'wb') as f:
-            f.write(response.content)
+    response = response.content.decode('utf-8')
+    #with open('download/' + input_filename, 'wb') as f:
+    #    f.write(response.content)
 
 
-    with open('download/' + input_filename, 'r', encoding='utf-8') as f:
-        rows = csv.DictReader(f)
+    #with open('download/' + input_filename, 'r', encoding='utf-8') as f:
+    #rows = csv.DictReader(f)
+    rows = csv.DictReader(io.StringIO(response))
 
-        output_list = list(rows)
+    output_list = list(rows)
 
     return output_list
 
@@ -162,7 +169,7 @@ def download(sleep = True):
     gc.collect()
 
 
-    time.sleep(60 * 5)
+    time.sleep(60 * 2.5)
 
 
 
