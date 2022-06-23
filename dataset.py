@@ -36,28 +36,31 @@ def download_aviationweather_csv(filename, debug_header_size = 5):
 
     output_list = []
 
-    if is_older_than('download/' +input_filename, minutes=2.5): 
+    if is_older_than('download/' + input_filename, minutes=2.5): 
+        Log.Write('downloading from %s' % url)
+        response = requests.get(url)
+        Log.Write('response status code = ' + str(response.status_code))
+        if response.status_code != 200:
+            raise Exception("Invalid status code")
+        response = response.content.decode('utf-8')
+
+        #default debug header:
+        #No errors
+        #No warnings
+        #474 ms
+        #data source=metars
+        #4809 results
+
+        n = -1
+        for i in range(0,5):
+            n = response.index('\n', n+1)
+        debug_header = response[0:n]
+
+        response = response[n+1:]
+
+        Log.Write(debug_header)
+
         with open('download/' + input_filename, 'wb') as f:
-            Log.Write('downloading from %s' % url)
-            response = requests.get(url)
-            response = response.content.decode('utf-8')
-
-            #default debug header:
-            #No errors
-            #No warnings
-            #474 ms
-            #data source=metars
-            #4809 results
-
-            n = -1
-            for i in range(0,5):
-                n = response.index('\n', n+1)
-            debug_header = response[0:n]
-
-            response = response[n+1:]
-
-            Log.Write(debug_header)
-
             f.write(response.encode('utf-8'))
 
     # extract raw_text
@@ -68,7 +71,6 @@ def download_aviationweather_csv(filename, debug_header_size = 5):
         next(rows)
 
         for row in rows:
-
             output_list.append(row[0])
             f_out.write('%s\n' % row[0])
 
@@ -86,9 +88,14 @@ def download_ourairports_csv(filename):
     output_list = []
 
     if is_older_than('download/' + input_filename, minutes=60): 
+        Log.Write('downloading from %s' % url)
+        response = requests.get(url)
+        Log.Write('response status code = ' + str(response.status_code))
+        if response.status_code != 200:
+            raise Exception("Invalid status code")
+
         with open('download/' + input_filename, 'wb') as f:
-            Log.Write('downloading from %s' % url)
-            f.write(requests.get(url).content)
+            f.write(response.content)
 
 
     with open('download/' + input_filename, 'r', encoding='utf-8') as f:
@@ -159,7 +166,7 @@ def download(sleep = True):
 
 
 
-utils.StartThread(download, 'download')
+utils.StartThread(download, 'download', restartOnException=True)
 
 
 
