@@ -33,7 +33,7 @@ def download_aviationweather_csv(filename, debug_header_size = 5):
 
     output_list = []
 
-    if is_older_than('download/' +input_filename, minutes=60): 
+    if is_older_than('download/' +input_filename, minutes=2.5): 
         with open('download/' + input_filename, 'wb') as f:
             Log.Write('downloading from %s' % url)
             response = requests.get(url)
