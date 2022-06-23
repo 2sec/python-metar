@@ -3,7 +3,7 @@
 
 import threading
 import random
-import numpy as np
+#import numpy as np
 import os
 import atexit
 import re
@@ -17,7 +17,7 @@ import Log
 random_state = 1217
 os.environ['PYTHONHASHSEED'] = '0'
 random.seed(random_state)
-np.random.seed(random_state)
+#np.random.seed(random_state)
 
 
 
