@@ -1,4 +1,6 @@
-ConfigParser==5.2.0
-Flask==1.1.2
-MarkupSafe==1.1.1
-requests==2.26.0
+ConfigParser
+Flask
+MarkupSafe
+requests
+gunicorn
+
