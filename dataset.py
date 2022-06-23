@@ -11,6 +11,9 @@ import time
 import Log
 import utils
 
+import gc
+
+
 
 
 
@@ -149,6 +152,7 @@ def download(sleep = True):
     airport_idents = idents
     airport_names = names
     
+    gc.collect()
 
 
     time.sleep(60 * 5)
