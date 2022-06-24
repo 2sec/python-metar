@@ -1,0 +1,10 @@
+#using GAE STD env
+env: standard
+instance_class: F4
+
+runtime: python39
+
+#-w 2 = 2 workers
+entrypoint: gunicorn -w 2 -b :$PORT main:app
+
+
