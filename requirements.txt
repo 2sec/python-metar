@@ -1,6 +1,5 @@
 ConfigParser
 Flask
-MarkupSafe
 requests
-gunicorn
+gunicorn 
 
