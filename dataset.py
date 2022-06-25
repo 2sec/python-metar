@@ -4,12 +4,13 @@ import csv
 import os
 from datetime import datetime 
 from datetime import timedelta
-from re import A
+from datetime import timezone
 import requests
 import time
 
 import Log
 import utils
+import io
 
 
 
@@ -18,14 +19,19 @@ debug = False
 
 
 def file_exist(filename):
-    return os.path.isfile(filename)
+    metadata = utils.bucket_metadata(filename)
+    return metadata is not None
+    #return os.path.isfile(filename)
 
 def is_older_than(filename, minutes):
-    if not file_exist(filename): return True
+    #if not file_exist(filename): return True
+    #modify_date = datetime.fromtimestamp(os.path.getmtime(filename))
+    metadata = utils.bucket_metadata(filename)
+    if metadata is None: return True 
+    modify_date = metadata.updated
+    modify_date = modify_date.replace(tzinfo=None)
 
-    modify_date = datetime.fromtimestamp(os.path.getmtime(filename))
-    
-    return modify_date + timedelta(minutes=minutes) < datetime.now()
+    return modify_date + timedelta(minutes=minutes) < datetime.utcnow()
 
 
 
@@ -38,15 +44,18 @@ def download_aviationweather_csv(filename, only_read_existing = False, debug_hea
 
     output_list = []
 
-    if only_read_existing and not file_exist('download/' + input_filename):
+
+    modify_date = utils.bucket_getlastmodified('download/' + output_filename)
+    is_older = modify_date + timedelta(minutes=10) < datetime.utcnow()
+
+    if only_read_existing and not modify_date:
         return []
 
 
     if only_read_existing:
-        with open('download/' + output_filename, 'r', newline='\n', encoding='utf-8') as f:
-            text = f.read()
-            output_list = text.split('\n')
-            if output_list[-1] == '': output_list.pop()
+        text = utils.bucket_download_string('download/' + output_filename)
+        output_list = text.split('\n')
+        if output_list[-1] == '': output_list.pop()
 
 
     if not only_read_existing and is_older_than('download/' + input_filename, minutes=2.5): 
@@ -56,7 +65,7 @@ def download_aviationweather_csv(filename, only_read_existing = False, debug_hea
         if response.status_code != 200:
             raise Exception("Invalid status code")
 
-        response = response.content.decode('utf-8')
+        content = response.content.decode('utf-8')
         #default debug header:
         #No errors
         #No warnings
@@ -66,28 +75,29 @@ def download_aviationweather_csv(filename, only_read_existing = False, debug_hea
 
         n = -1
         for i in range(0,5):
-            n = response.index('\n', n+1)
-        debug_header = response[0:n]
+            n = content.index('\n', n+1)
+        debug_header = content[0:n]
 
-        response = response[n+1:]
+        content = content[n+1:]
 
         Log.Write(debug_header)
 
-        with open('download/' + input_filename, 'wb') as f:
-            f.write(response.encode('utf-8'))
-
+        utils.bucket_upload_string('download/' + input_filename, content)
+    
         #extract raw_text
-        with open('download/' + input_filename, 'r', encoding='utf-8') as f, open('download/' + output_filename, 'w', newline='\n', encoding='utf-8') as f_out:
-            rows = csv.reader(f)
+        rows = csv.reader(io.StringIO(content))
 
-            #skip header row
-            next(rows)
+        #skip header row
+        next(rows)
 
-            for row in rows:
-                output_list.append(row[0])
-                f_out.write('%s\n' % row[0])
+        for row in rows:
+            output_list.append(row[0])
 
-    output_list.sort()
+        output_list.sort()
+        
+        utils.bucket_upload_string('download/' + output_filename, '\n'.join(output_list))
+
+
     return output_list
 
 
@@ -111,14 +121,12 @@ def download_ourairports_csv(filename, only_read_existing = False):
         if response.status_code != 200:
             raise Exception("Invalid status code")
 
-        with open('download/' + input_filename, 'wb') as f:
-            f.write(response.content)
+        utils.bucket_upload_string('download/' + input_filename, response.content.decode('utf-8'))
 
 
-    with open('download/' + input_filename, 'r', encoding='utf-8') as f:
-        rows = csv.DictReader(f)
-        output_list = list(rows)
-
+    content = utils.bucket_download_string('download/' + input_filename)
+    rows = csv.DictReader(io.StringIO(content))
+    output_list = list(rows)
 
     return output_list
 
@@ -136,7 +144,7 @@ class Cache(object):
 
     def download(self, only_read_existing = False):
         self.airports = download_ourairports_csv('airports', only_read_existing = only_read_existing)
-        self.runways = download_ourairports_csv('runways', only_read_existing = only_read_existing)
+        #self.runways = download_ourairports_csv('runways', only_read_existing = only_read_existing)
         self.metars = download_aviationweather_csv('metars', only_read_existing = only_read_existing)
         self.tafs = download_aviationweather_csv('tafs', only_read_existing = only_read_existing)
 
@@ -226,6 +234,7 @@ if __name__ == '__main__':
     while True:
         download()
         time.sleep(1000)
+
 
 
 

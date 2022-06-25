@@ -1,6 +1,7 @@
 # coding=utf-8
 
 
+from curses import meta
 import threading
 import random
 #import numpy as np
@@ -10,6 +11,7 @@ import re
 
 
 import Log
+from google.cloud import storage
 
 #various helper functions are put here, and also StartThread() and SendMail(), see below
 
@@ -20,6 +22,45 @@ random.seed(random_state)
 #np.random.seed(random_state)
 
 
+GAE_PROJECTID = os.getenv('GOOGLE_CLOUD_PROJECT')
+Log.Write('GOOGLE_CLOUD_PROJECT = ' + GAE_PROJECTID)
+GAE_BUCKET = GAE_PROJECTID + '.appspot.com'
+
+def bucket_upload_bytes(destination_filename, bytes, content_type = 'application/octet-stream'):
+    Log.Write('bucket uploading to %s' % destination_filename)
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(GAE_BUCKET)
+    blob = bucket.blob(destination_filename)
+    return blob.upload_from_string(bytes, content_type = content_type)
+
+
+def bucket_upload_string(destination_filename, str):
+    return bucket_upload_bytes(destination_filename, str.encode('utf-8'), 'text/plain')
+
+def bucket_download_bytes(source_filename):
+    Log.Write('bucket download from %s' % source_filename)
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(GAE_BUCKET)
+    blob = bucket.blob(source_filename)
+    bytes = blob.download_as_bytes()
+    return bytes
+
+def bucket_download_string(source_filename):
+    return bucket_download_bytes(source_filename).decode('utf-8')
+
+
+def bucket_metadata(source_filename):
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(GAE_BUCKET)
+    return bucket.get_blob(source_filename)
+
+def bucket_getlastmodified(source_filename):
+    metadata = bucket_metadata(source_filename)
+    if not metadata: return None
+    modify_date = metadata.updated
+    modify_date = modify_date.replace(tzinfo=None)
+    # otherwise this causes issues when comparing with other 'naive' datetimes
+    return modify_date
 
 
 

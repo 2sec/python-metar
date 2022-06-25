@@ -2,4 +2,5 @@ ConfigParser
 Flask
 requests
 gunicorn 
+google-cloud-storage
 

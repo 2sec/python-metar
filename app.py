@@ -12,6 +12,7 @@ import Log
 app = Flask(__name__, static_folder='static', static_url_path='')
 
 
+
 random_value = random.getrandbits(64)
 
 def read_cookie():
