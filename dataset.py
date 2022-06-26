@@ -18,7 +18,7 @@ last_modified_dic = {}
 def read_if_changed(filename, new_last_modified):
     last_modified = last_modified_dic.get(filename, '')
 
-    if last_modified == new_last_modified:
+    if last_modified and last_modified == new_last_modified:
         return None
 
     Log.Write('reload %s' % filename)
@@ -152,7 +152,6 @@ class Cache(object):
         return any_modified
 
     def update(self):
-
         if not self.download(True):
             return False
 
@@ -162,6 +161,7 @@ class Cache(object):
         metars = self.metars
 
         #TODO AMD COR CNL
+        
         #inconsistency in the source - sometimes a TAF starts with the word TAF, sometimes not
         for i, taf in enumerate(tafs):
             if taf.startswith('TAF '): tafs[i] = taf[4:]
@@ -204,10 +204,6 @@ class Cache(object):
 
 cache = None
 
-def delayed_start():
-    time.sleep(30)
-    utils.StartThread(update, 'update', restartOnException=True)
-
 #update in memory datasets every 30s in the background
 def update(firstTime=False):
     global cache
@@ -219,12 +215,15 @@ def update(firstTime=False):
     if not firstTime:
         time.sleep(30)
 
+def delayed_start():
+    time.sleep(30)
+    utils.StartThread(update, 'update', restartOnException=True)
 
 
 #initialize dataset
 #make sure update() runs once immediately, then run it every 30s after that
 update(True)
-utils.StartThread(delayed_start, 'delayed_start', restart=False, restartOnException=True)
+utils.StartThread(delayed_start, 'delayed_start', restart=False)
 
 
 
