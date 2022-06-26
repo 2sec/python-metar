@@ -12,9 +12,11 @@ import utils
 import io
 
 
+# this dict contains the last modification dates of all the files kept in memory
 last_modified_dic = {}
 
-
+# compare the date stored in /tmp/ (given as last_modified) vs the one in memory
+# if different, the file must be reloaded
 def read_if_changed(filename, new_last_modified):
     last_modified = last_modified_dic.get(filename, '')
 
@@ -28,7 +30,7 @@ def read_if_changed(filename, new_last_modified):
     return content
 
 
-
+# download the given file but only if it has changed
 def download_aviationweather_csv(output_list, filename, only_read_existing = False):
     base_url = 'https://www.aviationweather.gov/adds/dataserver_current/current/'
 
@@ -68,7 +70,7 @@ def download_aviationweather_csv(output_list, filename, only_read_existing = Fal
 
         Log.Write(debug_header)
 
-        #extract raw_text
+        #extract only "raw_text " (the first column)
         rows = csv.reader(io.StringIO(content))
 
         #skip header row
@@ -81,7 +83,10 @@ def download_aviationweather_csv(output_list, filename, only_read_existing = Fal
 
         output_list.sort()
         
+        #upload the new file
         utils.cloud_upload_text(filename, '\n'.join(output_list))
+
+        #signal the file has changed
         utils.tmp_write(filename, new_last_modified)
 
     return modified, output_list
@@ -102,7 +107,10 @@ def download_ourairports_csv(output_list, filename, only_read_existing = False):
         modified, response, new_last_modified = utils.http_download_if_newer(url, new_last_modified)
         if modified:
             content = response.content.decode('utf-8')
+            #upload the new file
             utils.cloud_upload_text(filename, content)
+
+            #signal the file has changed
             utils.tmp_write(filename, new_last_modified)
 
 
@@ -134,6 +142,7 @@ class Cache(object):
             self.airport_names = cache.airport_names
 
 
+    # return true only if one of the files has changed
     def download(self, only_read_existing = False):
         any_modified = False
 
@@ -151,6 +160,7 @@ class Cache(object):
 
         return any_modified
 
+    # update in memory structures if they have changed
     def update(self):
         if not self.download(True):
             return False

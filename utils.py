@@ -27,6 +27,7 @@ Log.Write('GOOGLE_CLOUD_PROJECT = ' + GAE_PROJECTID)
 GAE_BUCKET = GAE_PROJECTID + '.appspot.com'
 
 
+# upload to file in google cloud
 def cloud_upload_bytes(destination_filename, bytes, content_type = 'application/octet-stream'):
     Log.Write('cloud upload to %s/%s' % (GAE_BUCKET, destination_filename))
     storage_client = storage.Client()
@@ -38,7 +39,7 @@ def cloud_upload_bytes(destination_filename, bytes, content_type = 'application/
 def cloud_upload_text(destination_filename, text):
     return cloud_upload_bytes(destination_filename, text.encode('utf-8'), 'text/plain')
 
-
+# download from file in google cloud
 def cloud_download_bytes(source_filename):
     Log.Write('cloud download from %s/%s' % (GAE_BUCKET, source_filename))
     storage_client = storage.Client()
