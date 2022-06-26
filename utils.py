@@ -1,13 +1,13 @@
 # coding=utf-8
 
 
-from curses import meta
 import threading
 import random
 #import numpy as np
 import os
 import atexit
 import re
+import requests
 
 
 import Log
@@ -26,41 +26,65 @@ GAE_PROJECTID = os.getenv('GOOGLE_CLOUD_PROJECT')
 Log.Write('GOOGLE_CLOUD_PROJECT = ' + GAE_PROJECTID)
 GAE_BUCKET = GAE_PROJECTID + '.appspot.com'
 
-def bucket_upload_bytes(destination_filename, bytes, content_type = 'application/octet-stream'):
-    Log.Write('bucket uploading to %s' % destination_filename)
+
+def cloud_upload_bytes(destination_filename, bytes, content_type = 'application/octet-stream'):
+    Log.Write('cloud upload to %s/%s' % (GAE_BUCKET, destination_filename))
     storage_client = storage.Client()
     bucket = storage_client.bucket(GAE_BUCKET)
     blob = bucket.blob(destination_filename)
+    if not blob.exists(): return None
     return blob.upload_from_string(bytes, content_type = content_type)
 
+def cloud_upload_text(destination_filename, text):
+    return cloud_upload_bytes(destination_filename, text.encode('utf-8'), 'text/plain')
 
-def bucket_upload_string(destination_filename, str):
-    return bucket_upload_bytes(destination_filename, str.encode('utf-8'), 'text/plain')
 
-def bucket_download_bytes(source_filename):
-    Log.Write('bucket download from %s' % source_filename)
+def cloud_download_bytes(source_filename):
+    Log.Write('cloud download from %s/%s' % (GAE_BUCKET, source_filename))
     storage_client = storage.Client()
     bucket = storage_client.bucket(GAE_BUCKET)
     blob = bucket.blob(source_filename)
+    if not blob.exists(): return None
     bytes = blob.download_as_bytes()
     return bytes
 
-def bucket_download_string(source_filename):
-    return bucket_download_bytes(source_filename).decode('utf-8')
+def cloud_download_text(source_filename):
+    return cloud_download_bytes(source_filename).decode('utf-8')
 
 
-def bucket_metadata(source_filename):
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(GAE_BUCKET)
-    return bucket.get_blob(source_filename)
 
-def bucket_getlastmodified(source_filename):
-    metadata = bucket_metadata(source_filename)
-    if not metadata: return None
-    modify_date = metadata.updated
-    modify_date = modify_date.replace(tzinfo=None)
-    # otherwise this causes issues when comparing with other 'naive' datetimes
-    return modify_date
+def http_get_last_modified(url):
+    Log.Write('http head %s' % url)
+    response = requests.head(url)
+    last_modified = response.headers['Last-Modified']
+    Log.Write('Last-Modified %s' % last_modified)
+    return last_modified
+
+
+def http_download_if_newer(url, last_modified):
+    new_last_modified = http_get_last_modified(url)
+    if new_last_modified == last_modified:
+        return False, None, last_modified
+
+    Log.Write('http get %s' % url)
+    response = requests.get(url)
+    Log.Write('response status code = ' + str(response.status_code))
+    if response.status_code != 200:
+        raise Exception("Invalid status code")
+
+    return True, response, new_last_modified
+
+
+
+# files in /tmp are stored in memory in GAE
+def tmp_read(filename):
+    filename = '/tmp/' + filename
+    if not os.path.isfile(filename): return ''
+    return open(filename, 'r').read()
+
+def tmp_write(filename, str):
+    filename = '/tmp/' + filename
+    open(filename, 'w').write(str)
 
 
 

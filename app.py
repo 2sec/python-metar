@@ -67,7 +67,7 @@ def suggest(name):
 
 @app.route('/tasks/download')
 def download():
-    dataset.download()
+    dataset.cache.download()
     return "duh"
 
 
