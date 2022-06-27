@@ -62,7 +62,8 @@ def http_get_last_modified(url):
     return last_modified
 
 
-def http_download_if_newer(url, last_modified):
+def http_download_if_newer(url, last_modified, add_random_value = True):
+    url += '?r=' + str(random.getrandbits(64))
     new_last_modified = http_get_last_modified(url)
     if new_last_modified == last_modified:
         return False, None, last_modified
