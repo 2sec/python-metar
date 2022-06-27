@@ -7,7 +7,6 @@ from datetime import datetime
 from datetime import timedelta
 
 import dataset
-import Log
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 
@@ -67,8 +66,10 @@ def suggest(name):
 
 @app.route('/tasks/download')
 def download():
+    if flask.request.headers['X-Appengine-Cron'] != 'true':
+        return 'wot'
     dataset.cache.download()
-    return "duh"
+    return 'duh'
 
 
 if __name__ == "__main__":

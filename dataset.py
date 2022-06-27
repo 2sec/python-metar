@@ -23,7 +23,7 @@ def read_if_changed(filename, new_last_modified):
     if last_modified and last_modified == new_last_modified:
         return None
 
-    Log.Write('reload %s' % filename)
+    Log.Write('must reload %s' % filename)
     content = utils.cloud_download_text(filename)
     last_modified_dic[filename] = new_last_modified
 

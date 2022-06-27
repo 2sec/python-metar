@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
 <meta charset="utf-8">
 <title>Home</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7,6 +8,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/css/autoComplete.01.min.css">
+
+
 
 <style>
     *
@@ -23,75 +29,55 @@
         
     }
 
-    #results:empty
-    {
-        border: none
-    }
-
-    #results 
-    {
-        border: 1px solid #ccc;
-        padding: 1px;
-    }
-    #results ul 
-    {
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-    }
-    #results ul li 
-    {
-
-    }
-    #results ul li:hover 
-    {
-        background: #eee;
-    }    
 </style>
-<script src=""></script>
-<script>
-    function suggest(val)
-    {
-        let results_div = document.getElementById('results');
-        results_div.innerHTML = '';
-        if (val == '') return;
 
-        fetch('/suggest/' + val).then(function (response) 
-        {
-            return response.json();
-        }).then(function (response) 
-        {
-            let list = ''
-            let results = response.results;
-            for (let i = 0, n = results.length; i < n; i++) {
-                result = results[i]
-                list += '<li><a href="/add_airport/' + result.ident + '">' + result.ident + ' ' + result.name + '</a></li>';
-            }
-            results_div.innerHTML = '<ul>' + list + '</ul>';
-            return true;
-        }).catch(function (err) 
-        {
-            console.warn('duh!', err);
-            return false;
-        });    
-    }
+</head>
 
-
-    function toggle_display(href)
-    {
-        let id = href.substring(href.indexOf('#') + 1)
-        let style = document.getElementById(id).style;
-        if (style.display == 'none') style.display = 'block'; else style.display = 'none';
-    }
-</script>
 
 <body>
     
     <form autocomplete="off">
-        Search Airport <input type="text" onkeyup="suggest(this.value)"/>
-        <div id="results"></div>
+        <input id="autoComplete" />
     </form>
-    
+
+    <script>
+
+    const autoCompleteJS = new autoComplete(
+    {
+        placeHolder: "Search for Airports...",
+        data: 
+        {
+            src: async (query) => 
+            {
+                const source = await fetch('/suggest/' + escape(query));
+                const response = await source.json();
+                let list = []
+                let results = response.results;
+                for (let i = 0, n = results.length; i < n; i++) 
+                {
+                    result = results[i]
+                    list.push(result.ident + ' ' + result.name);
+                }
+
+                return list;
+            }
+        },
+        events: 
+        {
+            input: 
+            {
+                selection: (event) => 
+                {
+                    const selection = event.detail.selection.value;
+                    autoCompleteJS.input.value = selection;
+                    const code = selection.split(' ')[0]
+                    window.location.replace('/add_airport/' + code);
+                }
+            }
+        }
+    });
+    </script>
+
     <ul>
         {%- for airport in airports %}
             {%- if airport.ident in selected_airports %}
