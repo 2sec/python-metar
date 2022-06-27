@@ -4,18 +4,14 @@
 <meta charset="utf-8">
 <title>Home</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap" rel="stylesheet">
 
 <script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/css/autoComplete.01.min.css">
-
-
-
 <style>
-    *
+    body, input
     { 
         font-family: 'Open Sans', sans-serif; 
         font-size: 12pt;
@@ -28,8 +24,15 @@
         font-weight: bold;
         
     }
-
 </style>
+<script>
+    function toggle_display(href)
+    {
+        let id = href.substring(href.indexOf('#') + 1)
+        let style = document.getElementById(id).style;
+        if (style.display == 'none') style.display = 'block'; else style.display = 'none';
+    }
+</script>
 
 </head>
 
@@ -47,10 +50,10 @@
         placeHolder: "Search for Airports...",
         data: 
         {
-            src: async (query) => 
+            src: async function (query)
             {
-                const source = await fetch('/suggest/' + escape(query));
-                const response = await source.json();
+                let source = await fetch('/suggest/' + escape(query));
+                let response = await source.json();
                 let list = []
                 let results = response.results;
                 for (let i = 0, n = results.length; i < n; i++) 
@@ -58,7 +61,6 @@
                     result = results[i]
                     list.push(result.ident + ' ' + result.name);
                 }
-
                 return list;
             }
         },
@@ -71,6 +73,7 @@
                     const selection = event.detail.selection.value;
                     autoCompleteJS.input.value = selection;
                     const code = selection.split(' ')[0]
+                    document.body.style.cursor = 'wait'
                     window.location.replace('/add_airport/' + code);
                 }
             }
