@@ -130,16 +130,16 @@ class Cache(object):
         self.runways = []
         self.metars = []
         self.tafs = []
+        self.airports_dic = {}
         self.airport_idents = []
-        self.airport_names = []
 
         if cache:
             self.airports = cache.airports
             self.runways = cache.runways
             self.metars = cache.metars
             self.tafs = cache.tafs
+            self.airports_dic = cache.airports_dic
             self.airport_idents = cache.airport_idents
-            self.airport_names = cache.airport_names
 
 
     # return true only if one of the files has changed
@@ -170,7 +170,7 @@ class Cache(object):
         tafs = self.tafs
         metars = self.metars
 
-        #TODO AMD COR CNL
+        #TODO: AMD COR CNL
         
         #inconsistency in the source - sometimes a TAF starts with the word TAF, sometimes not
         for i, taf in enumerate(tafs):
@@ -178,21 +178,20 @@ class Cache(object):
         tafs.sort()
 
         idents = []
-        names = []
 
         # advance in all sorted lists at the same time, and find matching metars, tafs and runways
         metars_iter = iter(metars)
         metar = next(metars_iter, None)
 
-
         tafs_iter = iter(tafs)
         taf = next(tafs_iter, None)
 
+        airports_dic = {}
 
         for airport in self.airports:
             ident = airport['ident'].upper()
             idents.append(ident)
-            names.append(airport['name'])
+            airports_dic[ident] = airport
 
             # find matching metar, taf or runways, if any
             airport['metar'] = None
@@ -207,7 +206,7 @@ class Cache(object):
         
 
         self.airport_idents = idents
-        self.airport_names = names
+        self.airports_dic = airports_dic
 
         return True
 

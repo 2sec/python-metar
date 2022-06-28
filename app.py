@@ -1,3 +1,6 @@
+# coding=utf-8
+
+
 from flask import Flask
 from markupsafe import escape
 import flask
@@ -9,8 +12,6 @@ from datetime import timedelta
 import dataset
 
 app = Flask(__name__, static_folder='static', static_url_path='')
-
-
 
 random_value = random.getrandbits(64)
 
@@ -28,15 +29,22 @@ def write_cookie(response, selected_airports):
 @app.route('/')
 def home():
     selected_airports = read_cookie()
-    response = flask.make_response(flask.render_template('index.html', airports=dataset.cache.airports, selected_airports=selected_airports, random_value=random_value))
+    airports = []    
+    for airport in selected_airports:
+        airport = dataset.cache.airports_dic.get(airport, None)
+        if airport:
+            airports.append(airport)
+
+    response = flask.make_response(flask.render_template('index.html', airports=airports, random_value=random_value))
     write_cookie(response, selected_airports)
     return response
 
 
+# add, remove or move an airport up in the list
 @app.route('/add_airport/<airport>')
 def add_airport(airport):
     selected_airports = read_cookie()
-    if airport not in selected_airports: selected_airports.append(airport)
+    if airport not in selected_airports: selected_airports.insert(0, airport)
     redirect = flask.redirect('/')
     write_cookie(redirect, selected_airports)
     return redirect
@@ -49,24 +57,41 @@ def remove_airport(airport):
     write_cookie(redirect, selected_airports)
     return redirect
 
+@app.route('/move_airport/<airport>')
+def move_airport(airport):
+    selected_airports = read_cookie()
+    if airport in selected_airports: 
+        index = selected_airports.index(airport)
+        if index > 0:
+            del selected_airports[index]
+            selected_airports.insert(index - 1, airport)
+        redirect = flask.redirect('/')
+    write_cookie(redirect, selected_airports)
+    return redirect
 
+
+#return airports matching given text
+#currently only the ICAO code is seached
+#TODO: also search any word in the airport names
 @app.route('/suggest/<name>')
 def suggest(name):
     name = name.upper();
+    print(name)
     name_len = len(name)
     matches = []
-    for i, ident in enumerate(dataset.cache.airport_idents):
+    for ident in dataset.cache.airport_idents:
         if ident < name: continue
-        if ident[0:name_len] == name: matches.append({'ident': ident, 'name': dataset.cache.airport_names[i]})
+        if ident[0:name_len] == name: matches.append({'ident': ident, 'name': dataset.cache.airports_dic[ident]['name']})
         else: break
     return {
         "results": matches,
     }
 
 
+
 @app.route('/tasks/download')
 def download():
-    if flask.request.headers['X-Appengine-Cron'] != 'true':
+    if flask.request.headers.get('X-Appengine-Cron', None) != 'true':
         return 'wot'
     dataset.cache.download()
     return 'duh'

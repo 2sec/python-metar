@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 <meta charset="utf-8">
 <title>Home</title>
@@ -26,28 +27,24 @@
     }
 </style>
 <script>
-    function toggle_display(href)
+    function toggle_display(id)
     {
-        let id = href.substring(href.indexOf('#') + 1)
         let style = document.getElementById(id).style;
         if (style.display == 'none') style.display = 'block'; else style.display = 'none';
     }
 </script>
-
 </head>
 
 
 <body>
-    
     <form autocomplete="off">
         <input id="autoComplete" />
     </form>
 
     <script>
-
     const autoCompleteJS = new autoComplete(
     {
-        placeHolder: "Search for Airports...",
+        placeHolder: "Search Airport ICAO Code...",
         data: 
         {
             src: async function (query)
@@ -64,11 +61,15 @@
                 return list;
             }
         },
+        resultsList:
+        {
+            maxResults: 100
+        },
         events: 
         {
             input: 
             {
-                selection: (event) => 
+                selection: function (event) 
                 {
                     const selection = event.detail.selection.value;
                     autoCompleteJS.input.value = selection;
@@ -83,16 +84,15 @@
 
     <ul>
         {%- for airport in airports %}
-            {%- if airport.ident in selected_airports %}
             <li>
-                <a href="/remove_airport/{{ airport.ident }}" title="Remove">&Cross;</a> <a href="#" title="Move Up">&uarr;</a>
-                <a href="#{{ airport.ident }}" onclick="toggle_display(this.href)">{{ airport.ident }} {{ airport.name }}</a>
-                <ul id="{{ airport.ident }}">
-                    <li><b>MET</b> {{ airport.metar }}</li>
-                    <li><b>TAF</b> {{ airport.taf }}</li>
+                {%- set ident = airport['ident'] %}
+                <a href="/remove_airport/{{ ident }}" title="Remove">&Cross;</a> <a href="/move_airport/{{ ident }}" title="Move Up">&uarr;</a>
+                <a href="#{{ ident }}" onclick="toggle_display('{{ ident }}')">{{ ident }} {{ airport['name'] }}</a>
+                <ul id="{{ ident }}">
+                    <li><b>MET</b> {{ airport['metar'] }}</li>
+                    <li><b>TAF</b> {{ airport['taf'] }}</li>
                 </ul>
             </li>
-            {%- endif %}
         {%- endfor %}
     </ul>
     
