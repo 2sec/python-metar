@@ -40,54 +40,40 @@ def download_aviationweather_csv(output_list, filename, only_read_existing = Fal
 
     modified = False
 
-    if only_read_existing:
-        content = read_if_changed(filename, new_last_modified)
+    if not only_read_existing:
+        modified, response, new_last_modified = utils.http_download_if_newer(url, new_last_modified)
+        if modified:
+            content = response.content.decode('utf-8')
+            #default debug header:
+            #No errors
+            #No warnings
+            #474 ms
+            #data source=metars
+            #4809 results
 
-        if content:
-            output_list = content.split('\n')
-            if output_list[-1] == '': output_list.pop()
-            modified = True
+            n = -1
+            for i in range(0,5):
+                n = content.index('\n', n+1)
+            debug_header = content[0:n]
+
+            content = content[n+1:]
+
+            Log.Write(debug_header)
+
+            #upload the new file
+            utils.cloud_upload_text(filename, content)
+
+            #signal the file has changed
+            utils.tmp_write(filename, new_last_modified)
             
-        return modified, output_list
 
-    
-    modified, response, new_last_modified = utils.http_download_if_newer(url, new_last_modified)
-    if modified:
-        content = response.content.decode('utf-8')
-        #default debug header:
-        #No errors
-        #No warnings
-        #474 ms
-        #data source=metars
-        #4809 results
+    content = read_if_changed(filename, new_last_modified)
+    if content:
+        rows = csv.DictReader(io.StringIO(content), quoting=csv.QUOTE_NONE)
+        output_list = list(rows)
+        output_list.sort(key=lambda item: item['station_id'])
+        modified = True
 
-        n = -1
-        for i in range(0,5):
-            n = content.index('\n', n+1)
-        debug_header = content[0:n]
-
-        content = content[n+1:]
-
-        Log.Write(debug_header)
-
-        #extract only "raw_text " (the first column)
-        rows = csv.reader(io.StringIO(content))
-
-        #skip header row
-        next(rows)
-
-        output_list = []
-
-        for row in rows:
-            output_list.append(row[0])
-
-        output_list.sort()
-        
-        #upload the new file
-        utils.cloud_upload_text(filename, '\n'.join(output_list))
-
-        #signal the file has changed
-        utils.tmp_write(filename, new_last_modified)
 
     return modified, output_list
 
@@ -118,6 +104,7 @@ def download_ourairports_csv(output_list, filename, only_read_existing = False):
     if content:
         rows = csv.DictReader(io.StringIO(content))
         output_list = list(rows)
+        output_list.sort(key=lambda item: item['ident'])
         modified = True
 
     return modified, output_list
@@ -125,7 +112,7 @@ def download_ourairports_csv(output_list, filename, only_read_existing = False):
 
 
 class Cache(object):
-    def __init__(self, cache):
+    def __init__(self, cache = None):
         self.airports = []
         self.runways = []
         self.metars = []
@@ -162,6 +149,7 @@ class Cache(object):
 
     # update in memory structures if they have changed
     def update(self):
+        #if nothing changed: do nothing
         if not self.download(True):
             return False
 
@@ -171,12 +159,12 @@ class Cache(object):
         metars = self.metars
 
         #TODO: AMD COR CNL
-        
+
         #inconsistency in the source - sometimes a TAF starts with the word TAF, sometimes not
         for i, taf in enumerate(tafs):
-            if taf.startswith('TAF '): tafs[i] = taf[4:]
-        tafs.sort()
-
+            raw_text = taf['raw_text']
+            if raw_text.startswith('TAF '): tafs[i]['raw_text'] = raw_text[4:]
+        
         idents = []
 
         # advance in all sorted lists at the same time, and find matching metars, tafs and runways
@@ -197,12 +185,11 @@ class Cache(object):
             airport['metar'] = None
             airport['taf'] = None
 
+            while metar and ident > metar['station_id']: metar = next(metars_iter, None)
+            if metar and ident == metar['station_id']: airport['metar'] = metar['raw_text']
 
-            while metar and ident > metar[0:4]: metar = next(metars_iter, None)
-            if metar and ident == metar[0:4]: airport['metar'] = metar
-
-            while taf and ident > taf[0:4]: taf = next(tafs_iter, None)
-            if taf and ident == taf[0:4]: airport['taf'] = taf
+            while taf and ident > taf['station_id']: taf = next(tafs_iter, None)
+            if taf and ident == taf['station_id']: airport['taf'] = taf['raw_text']
         
 
         self.airport_idents = idents
@@ -243,7 +230,7 @@ if __name__ == '__main__':
     #config.Run()
 
     while True:
-        cache.download()
+        Cache().download()
         time.sleep(60)
 
 

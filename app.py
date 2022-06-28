@@ -88,7 +88,8 @@ def suggest(name):
     }
 
 
-
+#download datasets if they have changed
+#called by GAE every min
 @app.route('/tasks/download')
 def download():
     if flask.request.headers.get('X-Appengine-Cron', None) != 'true':

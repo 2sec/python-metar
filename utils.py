@@ -26,6 +26,7 @@ GAE_PROJECTID = os.getenv('GOOGLE_CLOUD_PROJECT')
 Log.Write('GOOGLE_CLOUD_PROJECT = ' + GAE_PROJECTID)
 GAE_BUCKET = GAE_PROJECTID + '.appspot.com'
 
+save_in_download = False
 
 # upload to file in google cloud
 def cloud_upload_bytes(destination_filename, bytes, content_type = 'application/octet-stream'):
@@ -34,7 +35,12 @@ def cloud_upload_bytes(destination_filename, bytes, content_type = 'application/
     bucket = storage_client.bucket(GAE_BUCKET)
     blob = bucket.blob(destination_filename)
     if not blob.exists(): return None
+    if save_in_download:
+        open('download/' + destination_filename, 'wb').write(bytes)
+
     return blob.upload_from_string(bytes, content_type = content_type)
+
+
 
 def cloud_upload_text(destination_filename, text):
     return cloud_upload_bytes(destination_filename, text.encode('utf-8'), 'text/plain')
