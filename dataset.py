@@ -31,7 +31,7 @@ def read_if_changed(filename, new_last_modified):
 
 
 # download the given file but only if it has changed
-def download_aviationweather_csv(output_list, filename, only_read_existing = False):
+def download_aviationweather_csv(output_list, filename, fields, only_read_existing = False):
     base_url = 'https://www.aviationweather.gov/adds/dataserver_current/current/'
 
     url = base_url + filename
@@ -70,8 +70,15 @@ def download_aviationweather_csv(output_list, filename, only_read_existing = Fal
     content = read_if_changed(filename, new_last_modified)
     if content:
         rows = csv.DictReader(io.StringIO(content), quoting=csv.QUOTE_NONE)
-        output_list = list(rows)
+        #output_list = list(rows)
+
+        output_list = []
+        for row in rows:
+            row = { key: row[key] for key in fields}
+            output_list.append(row)
+
         output_list.sort(key=lambda item: item['station_id'])
+
         modified = True
 
 
@@ -80,7 +87,7 @@ def download_aviationweather_csv(output_list, filename, only_read_existing = Fal
 
 
 
-def download_ourairports_csv(output_list, filename, only_read_existing = False):
+def download_ourairports_csv(output_list, filename, fields, only_read_existing = False):
     base_url = 'https://davidmegginson.github.io/ourairports-data/'
 
     url = base_url + filename
@@ -103,8 +110,14 @@ def download_ourairports_csv(output_list, filename, only_read_existing = False):
     content = read_if_changed(filename, new_last_modified)
     if content:
         rows = csv.DictReader(io.StringIO(content))
-        output_list = list(rows)
+        
+        output_list = []
+        for row in rows:
+            row = { key: row[key] for key in fields}
+            output_list.append(row)
+
         output_list.sort(key=lambda item: item['ident'])
+
         modified = True
 
     return modified, output_list
@@ -133,30 +146,18 @@ class Cache(object):
     def download(self, only_read_existing = False):
         any_modified = False
 
-        modified, self.airports = download_ourairports_csv(self.airports, 'airports.csv', only_read_existing = only_read_existing)
+        modified, self.airports = download_ourairports_csv(self.airports, 'airports.csv', ['ident', 'name'], only_read_existing = only_read_existing)
         any_modified |= modified
 
         #modified, self.runways, modified = download_ourairports_csv(self.runways, 'runways.csv', only_read_existing = only_read_existing)
         #any_modified |= modified
 
-        modified, self.metars = download_aviationweather_csv(self.metars, 'metars.cache.csv', only_read_existing = only_read_existing)
+        modified, self.metars = download_aviationweather_csv(self.metars, 'metars.cache.csv', ['raw_text', 'station_id', 'flight_category'], only_read_existing = only_read_existing)
         any_modified |= modified
-        if modified:
-            metars = []
-            for row in self.metars:
-                row = { key: row[key] for key in ['raw_text', 'station_id', 'flight_category']}
-                metars.append(row)
-            self.metars = metars
 
 
-        modified, self.tafs = download_aviationweather_csv(self.tafs, 'tafs.cache.csv', only_read_existing = only_read_existing)
+        modified, self.tafs = download_aviationweather_csv(self.tafs, 'tafs.cache.csv', ['raw_text', 'station_id'], only_read_existing = only_read_existing)
         any_modified |= modified
-        if modified:
-            tafs = []
-            for row in self.tafs:
-                row = { key: row[key] for key in ['raw_text', 'station_id']}
-                tafs.append(row)
-            self.tafs = tafs
 
         return any_modified
 
