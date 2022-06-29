@@ -29,6 +29,23 @@
     .IFR { color: red; }
     .LIFR { color: magenta; }
 
+    .wind { display: inline-block; }
+    .N { transform: rotate(0deg); }
+    .NNE { transform: rotate(22.5deg); }
+    .NE { transform: rotate(45deg); }
+    .ENE { transform: rotate(67.5deg); }
+    .E { transform: rotate(90deg); }
+    .ESE { transform: rotate(112.5deg); }
+    .SE { transform: rotate(135deg); }
+    .SSE { transform: rotate(157.5deg); }
+    .S { transform: rotate(180deg); }
+    .SSW { transform: rotate(202.5deg); }
+    .SW { transform: rotate(-135deg); }
+    .WSW { transform: rotate(-114.5deg); }
+    .W { transform: rotate(-90deg); }
+    .WNW { transform: rotate(-69.5deg); }
+    .NW { transform: rotate(-45deg); }
+    .NNW { transform: rotate(-24.5deg); }
 </style>
 <script>
     function toggle_display(id)
@@ -46,7 +63,7 @@
     </form>
 
     <script>
-    const autoCompleteJS = new autoComplete(
+    let autoCompleteJS = new autoComplete(
     {
         placeHolder: "Search Airport ICAO Code...",
         data: 
@@ -84,6 +101,17 @@
             }
         }
     });
+
+    let idle_time = new Date().getTime();
+    document.body.addEventListener('keypress', () => idle_time = new Date().getTime() );
+    function test_idle() {
+         if(new Date().getTime() - idle_time >= 10 * 1000) 
+             window.location.reload();
+         else 
+             setTimeout(test_idle, 5 * 1000);
+     } 
+     test_idle();
+
     </script>
 
     <ul>
@@ -93,14 +121,30 @@
                 {%- set metar = airport['metar'] %}
                 {%- set taf = airport['taf'] %}
                 {%- set cat = metar['flight_category'] %}
+                {%- set wind_dir_degrees, wind_speed_kt,  wind_gust_kt = metar['wind_dir_degrees'], metar['wind_speed_kt'], metar['wind_gust_kt'] %}
                 <a href="/remove_airport/{{ ident }}" title="Remove">&Cross;</a> <a href="/move_airport/{{ ident }}" title="Move Up">&uarr;</a>
                 <a href="#{{ ident }}" onclick="toggle_display('{{ ident }}')">{{ ident }} {{ airport['name'] }}</a>
                 {%- if cat %}
                     <b class="{{ cat }}"> {{ cat }}</b>
+                    {%- if wind_dir_degrees and wind_speed_kt %}
+                        {%- set wind_classes = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'] %}
+                        {%- set wind_dir_degrees = (wind_dir_degrees|float) % 360 %}
+                        {%- set wind_class = ((wind_dir_degrees) / 22.5 + 0.5)|int %}
+                        {%- set wind_class =  wind_classes[wind_class] %}
+                        <b class="wind {{ wind_class }}">&#11167;</b>
+                        <b> {{ wind_dir_degrees }}° ~{{ wind_class }} {{ wind_speed_kt }} kt</b>
+                        <b> </b>
+                        {%- if wind_gust_kt %}
+                            <b> gust {{ wind_gust_kt }} kt</b>
+                        {%- endif %}
+                    {%- endif %}
                 {%- endif %}
                 <ul id="{{ ident }}">
-                    <li><b>MET</b> {{ metar['raw_text'] }}</li>
-                    <li><b>TAF</b> {{ taf['raw_text'] }}</li>
+                    <li><b>METAR </b>{{ metar['raw_text'] }}</li>
+                    {%-if taf %}
+                        <li><b>TAF</b> {{ taf['raw_text'] }}</li>
+                    {%- endif %}
+                    
                 </ul>
             </li>
         {%- endfor %}

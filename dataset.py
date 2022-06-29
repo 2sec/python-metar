@@ -23,7 +23,7 @@ def read_if_changed(filename, new_last_modified):
     if last_modified and last_modified == new_last_modified:
         return None
 
-    Log.Write('must reload %s' % filename)
+    Log.Write('must reload %s: %s != %s' % (filename, last_modified, new_last_modified))
     content = utils.cloud_download_text(filename)
     last_modified_dic[filename] = new_last_modified
 
@@ -70,7 +70,6 @@ def download_aviationweather_csv(output_list, filename, fields, only_read_existi
     content = read_if_changed(filename, new_last_modified)
     if content:
         rows = csv.DictReader(io.StringIO(content), quoting=csv.QUOTE_NONE)
-        #output_list = list(rows)
 
         output_list = []
         for row in rows:
@@ -152,7 +151,7 @@ class Cache(object):
         #modified, self.runways, modified = download_ourairports_csv(self.runways, 'runways.csv', only_read_existing = only_read_existing)
         #any_modified |= modified
 
-        modified, self.metars = download_aviationweather_csv(self.metars, 'metars.cache.csv', ['raw_text', 'station_id', 'flight_category'], only_read_existing = only_read_existing)
+        modified, self.metars = download_aviationweather_csv(self.metars, 'metars.cache.csv', ['raw_text', 'station_id', 'flight_category', 'wind_dir_degrees', 'wind_speed_kt', 'wind_gust_kt'], only_read_existing = only_read_existing)
         any_modified |= modified
 
 

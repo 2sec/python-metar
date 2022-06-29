@@ -61,10 +61,9 @@ def cloud_download_text(source_filename):
 
 
 def http_get_last_modified(url):
-    Log.Write('http head %s' % url)
     response = requests.head(url)
     last_modified = response.headers['Last-Modified']
-    Log.Write('Last-Modified %s' % last_modified)
+    Log.Write('Last-Modified %s %s' % (last_modified, url))
     return last_modified
 
 
