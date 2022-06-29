@@ -5,16 +5,21 @@
 <meta charset="utf-8">
 <title>Home</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap" rel="stylesheet">
+
+<!--
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap" rel="stylesheet">
+-->
 
 <script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/css/autoComplete.01.min.css">
 <style>
     body, input
     { 
-        font-family: 'Open Sans', sans-serif; 
+        font-family: 'Montserrat', 'Open Sans', sans-serif; 
         font-size: 12pt;
     }
 
@@ -29,7 +34,7 @@
     .IFR { color: red; }
     .LIFR { color: magenta; }
 
-    .wind { display: inline-block; }
+    .wind { display: inline-block; font-family: Verdana, 'Courier New'; }
     .N { transform: rotate(0deg); }
     .NNE { transform: rotate(22.5deg); }
     .NE { transform: rotate(45deg); }
@@ -129,10 +134,12 @@
                     {%- if wind_dir_degrees and wind_speed_kt %}
                         {%- set wind_classes = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'] %}
                         {%- set wind_dir_degrees = (wind_dir_degrees|float) % 360 %}
-                        {%- set wind_class = ((wind_dir_degrees) / 22.5 + 0.5)|int %}
+                        {%- set wind_class = ((wind_dir_degrees) / 22.5 + 0.5)|round|int %}
                         {%- set wind_class =  wind_classes[wind_class] %}
-                        <b class="wind {{ wind_class }}">&#11167;</b>
-                        <b> {{ wind_dir_degrees }}° ~{{ wind_class }} {{ wind_speed_kt }} kt</b>
+                        <span> Wind {{ wind_class }}</span>
+                        <span class="wind {{ wind_class }}">⮟</span>
+                        <!-- <span class="wind {{ wind_class }}"><img src="/north-small.png"/></span> -->
+                        <b> {{ wind_dir_degrees|int }}° {{ wind_speed_kt }} kt</b>
                         <b> </b>
                         {%- if wind_gust_kt %}
                             <b> gust {{ wind_gust_kt }} kt</b>
