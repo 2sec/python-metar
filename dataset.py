@@ -141,9 +141,22 @@ class Cache(object):
 
         modified, self.metars = download_aviationweather_csv(self.metars, 'metars.cache.csv', only_read_existing = only_read_existing)
         any_modified |= modified
+        if modified:
+            metars = []
+            for row in self.metars:
+                row = { key: row[key] for key in ['raw_text', 'station_id', 'flight_category']}
+                metars.append(row)
+            self.metars = metars
+
 
         modified, self.tafs = download_aviationweather_csv(self.tafs, 'tafs.cache.csv', only_read_existing = only_read_existing)
         any_modified |= modified
+        if modified:
+            tafs = []
+            for row in self.tafs:
+                row = { key: row[key] for key in ['raw_text', 'station_id']}
+                tafs.append(row)
+            self.tafs = tafs
 
         return any_modified
 
@@ -186,10 +199,10 @@ class Cache(object):
             airport['taf'] = None
 
             while metar and ident > metar['station_id']: metar = next(metars_iter, None)
-            if metar and ident == metar['station_id']: airport['metar'] = metar['raw_text']
+            if metar and ident == metar['station_id']: airport['metar'] = metar
 
             while taf and ident > taf['station_id']: taf = next(tafs_iter, None)
-            if taf and ident == taf['station_id']: airport['taf'] = taf['raw_text']
+            if taf and ident == taf['station_id']: airport['taf'] = taf
         
 
         self.airport_idents = idents

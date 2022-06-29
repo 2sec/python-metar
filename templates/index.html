@@ -23,8 +23,12 @@
         text-decoration: none;
         color: black;
         font-weight: bold;
-        
     }
+    .VFR { color: green; }
+    .MVFR { color: blue; }
+    .IFR { color: red; }
+    .LIFR { color: magenta; }
+
 </style>
 <script>
     function toggle_display(id)
@@ -86,11 +90,17 @@
         {%- for airport in airports %}
             <li>
                 {%- set ident = airport['ident'] %}
+                {%- set metar = airport['metar'] %}
+                {%- set taf = airport['taf'] %}
+                {%- set cat = metar['flight_category'] %}
                 <a href="/remove_airport/{{ ident }}" title="Remove">&Cross;</a> <a href="/move_airport/{{ ident }}" title="Move Up">&uarr;</a>
                 <a href="#{{ ident }}" onclick="toggle_display('{{ ident }}')">{{ ident }} {{ airport['name'] }}</a>
+                {%- if cat %}
+                    <b class="{{ cat }}"> {{ cat }}</b>
+                {%- endif %}
                 <ul id="{{ ident }}">
-                    <li><b>MET</b> {{ airport['metar'] }}</li>
-                    <li><b>TAF</b> {{ airport['taf'] }}</li>
+                    <li><b>MET</b> {{ metar['raw_text'] }}</li>
+                    <li><b>TAF</b> {{ taf['raw_text'] }}</li>
                 </ul>
             </li>
         {%- endfor %}
