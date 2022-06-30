@@ -34,7 +34,6 @@ def cloud_upload_bytes(destination_filename, bytes, content_type = 'application/
     storage_client = storage.Client()
     bucket = storage_client.bucket(GAE_BUCKET)
     blob = bucket.blob(destination_filename)
-    if not blob.exists(): return None
     if save_in_download:
         open('download/' + destination_filename, 'wb').write(bytes)
 
@@ -56,7 +55,9 @@ def cloud_download_bytes(source_filename):
     return bytes
 
 def cloud_download_text(source_filename):
-    return cloud_download_bytes(source_filename).decode('utf-8')
+    file = cloud_download_bytes(source_filename);
+    if not file: return None
+    return file.decode('utf-8')
 
 
 

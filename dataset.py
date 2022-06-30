@@ -1,10 +1,6 @@
 # coding=utf-8
 
 import csv
-import os
-from datetime import datetime 
-from datetime import timedelta
-from datetime import timezone
 import time
 
 import Log
@@ -65,6 +61,9 @@ def download_aviationweather_csv(output_list, filename, fields, only_read_existi
 
             #signal the file has changed
             utils.tmp_write(filename, new_last_modified)
+
+        return modified, output_list
+
             
 
     content = read_if_changed(filename, new_last_modified)
@@ -104,6 +103,8 @@ def download_ourairports_csv(output_list, filename, fields, only_read_existing =
 
             #signal the file has changed
             utils.tmp_write(filename, new_last_modified)
+
+        return modified, output_list
 
 
     content = read_if_changed(filename, new_last_modified)
@@ -153,7 +154,6 @@ class Cache(object):
 
         modified, self.metars = download_aviationweather_csv(self.metars, 'metars.cache.csv', ['raw_text', 'station_id', 'flight_category', 'wind_dir_degrees', 'wind_speed_kt', 'wind_gust_kt'], only_read_existing = only_read_existing)
         any_modified |= modified
-
 
         modified, self.tafs = download_aviationweather_csv(self.tafs, 'tafs.cache.csv', ['raw_text', 'station_id'], only_read_existing = only_read_existing)
         any_modified |= modified
@@ -235,6 +235,7 @@ update(True)
 utils.StartThread(delayed_start, 'delayed_start', restart=False)
 
 
+#TODO: when creating a new project in GAE, the CSV files need to be uploaded before the first run
 
 
 if __name__ == '__main__':
