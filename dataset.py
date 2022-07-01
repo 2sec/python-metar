@@ -116,8 +116,7 @@ def download_ourairports_csv(output_list, filename, fields, only_read_existing =
             row = { key: row[key] for key in fields}
             output_list.append(row)
 
-        output_list.sort(key=lambda item: item['ident'])
-
+        output_list.sort(key=lambda item: item[fields[0]])
         modified = True
 
     return modified, output_list
@@ -146,11 +145,11 @@ class Cache(object):
     def download(self, only_read_existing = False):
         any_modified = False
 
-        modified, self.airports = download_ourairports_csv(self.airports, 'airports.csv', ['ident', 'name'], only_read_existing = only_read_existing)
+        modified, self.airports = download_ourairports_csv(self.airports, 'airports.csv', ['ident', 'name', 'elevation_ft'], only_read_existing = only_read_existing)
         any_modified |= modified
 
-        #modified, self.runways, modified = download_ourairports_csv(self.runways, 'runways.csv', only_read_existing = only_read_existing)
-        #any_modified |= modified
+        modified, self.runways = download_ourairports_csv(self.runways, 'runways.csv', ['airport_ident', 'length_ft', 'surface', 'le_ident', 'he_ident', 'closed' ], only_read_existing = only_read_existing)
+        any_modified |= modified
 
         modified, self.metars = download_aviationweather_csv(self.metars, 'metars.cache.csv', ['raw_text', 'station_id', 'flight_category', 'wind_dir_degrees', 'wind_speed_kt', 'wind_gust_kt'], only_read_existing = only_read_existing)
         any_modified |= modified
@@ -170,6 +169,7 @@ class Cache(object):
 
         tafs = self.tafs
         metars = self.metars
+        runways = self.runways
 
         #TODO: AMD COR CNL
 
@@ -187,6 +187,10 @@ class Cache(object):
         tafs_iter = iter(tafs)
         taf = next(tafs_iter, None)
 
+        runways_iter = iter(runways)
+        runway = next(runways_iter, None)
+
+
         airports_dic = {}
 
         for airport in self.airports:
@@ -203,6 +207,16 @@ class Cache(object):
 
             while taf and ident > taf['station_id']: taf = next(tafs_iter, None)
             if taf and ident == taf['station_id']: airport['taf'] = taf
+
+
+            airport_runways =  []
+            elevation_ft = 0
+            while runway and ident > runway['airport_ident']: runway = next(runways_iter)
+            while runway and ident == runway['airport_ident']:
+                if runway['closed'] == '0':
+                    airport_runways.append(runway)
+                runway = next(runways_iter)
+            airport['runways'] = airport_runways
         
 
         self.airport_idents = idents
@@ -211,7 +225,11 @@ class Cache(object):
         return True
 
 
-cache = None
+cache = Cache()
+
+if utils.is_production:
+    #force a download at startup
+    cache.download()
 
 #update in memory datasets every 30s in the background
 def update(firstTime=False):
@@ -233,21 +251,6 @@ def delayed_start():
 #make sure update() runs once immediately, then run it every 30s after that
 update(True)
 utils.StartThread(delayed_start, 'delayed_start', restart=False)
-
-
-#TODO: when creating a new project in GAE, the CSV files need to be uploaded before the first run
-
-
-if __name__ == '__main__':
-
-    #config = CamConfig()
-    #config.Run()
-
-    while True:
-        Cache().download()
-        time.sleep(60)
-
-
 
 
 

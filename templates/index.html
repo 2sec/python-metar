@@ -1,40 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 <meta charset="utf-8">
 <title>Home</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap" rel="stylesheet">
-
 <!--
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap" rel="stylesheet">
 -->
-
 <script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/css/autoComplete.01.min.css">
 <style>
+    body
+    {
+        margin: 10pt;
+    }
     body, input
     { 
         font-family: 'Montserrat', 'Open Sans', sans-serif; 
         font-size: 12pt;
     }
-
+    
     a:link, a:visited
     {
         text-decoration: none;
         color: black;
         font-weight: bold;
     }
+
+    .airport
+    {
+        border-top: 1px dotted;
+        margin-top: 10pt;
+    }
+
+    .airport_name
+    {
+        padding-top: 10pt;
+        padding-bottom: 10pt;
+    }
+
     .VFR { color: green; }
     .MVFR { color: blue; }
     .IFR { color: red; }
     .LIFR { color: magenta; }
 
-    .wind { display: inline-block; font-family: Verdana, 'Courier New'; }
+    .wind { display: inline-block; font-family: 'Courier New'; }
     .N { transform: rotate(0deg); }
     .NNE { transform: rotate(22.5deg); }
     .NE { transform: rotate(45deg); }
@@ -65,6 +78,9 @@
 <body>
     <form autocomplete="off">
         <input id="autoComplete" />
+        <div>
+            <input id="reload" type="checkbox"/> <label for="reload">Auto Reload</label>
+        </div>
     </form>
 
     <script>
@@ -107,55 +123,70 @@
         }
     });
 
-    /*let idle_time = new Date().getTime();
-    document.body.addEventListener('keypress', () => idle_time = new Date().getTime() );
-    function test_idle() {
-         if(new Date().getTime() - idle_time >= 10 * 1000) 
-             window.location.reload();
-         else 
-             setTimeout(test_idle, 5 * 1000);
-     } 
-     test_idle();*/
+    let params = new URLSearchParams(window.location.search);
+    let reload = document.getElementById('reload');
+    if (params.get('reload') == 1) reload.checked = true
 
+    reload.addEventListener('change', (e) => { window.location.href = '/' + (e.currentTarget.checked? '?reload=1': ''); });
+    
+    if(reload.checked)
+    {
+        let time = () => new Date().getTime();
+        let idle_time = time();
+        document.body.addEventListener('keypress', () => idle_time = time() );
+        function test_idle() {
+            if(time() - idle_time >= 10 * 1000) 
+                window.location.href = '/?reload=1'
+            else 
+                setTimeout(test_idle, 5 * 1000);
+        } 
+        test_idle();
+    }
     </script>
 
-    <ul>
-        {%- for airport in airports %}
-            <li>
-                {%- set ident = airport['ident'] %}
-                {%- set metar = airport['metar'] %}
-                {%- set taf = airport['taf'] %}
-                {%- set cat = metar['flight_category'] %}
-                {%- set wind_dir_degrees, wind_speed_kt,  wind_gust_kt = metar['wind_dir_degrees'], metar['wind_speed_kt'], metar['wind_gust_kt'] %}
-                <a href="/remove_airport/{{ ident }}" title="Remove">&Cross;</a> <a href="/move_airport/{{ ident }}" title="Move Up">&uarr;</a>
-                <a href="#{{ ident }}" onclick="toggle_display('{{ ident }}')">{{ ident }} {{ airport['name'] }}</a>
-                {%- if cat %}
-                    <b class="{{ cat }}"> {{ cat }}</b>
-                    {%- if wind_dir_degrees and wind_speed_kt %}
-                        {%- set wind_classes = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'] %}
-                        {%- set wind_dir_degrees = (wind_dir_degrees|float) % 360 %}
-                        {%- set wind_class = ((wind_dir_degrees) / 22.5 + 0.5)|round|int %}
-                        {%- set wind_class =  wind_classes[wind_class] %}
-                        <span> Wind {{ wind_class }}</span>
-                        <span class="wind {{ wind_class }}">⮟</span>
-                        <!-- <span class="wind {{ wind_class }}"><img src="/north-small.png"/></span> -->
-                        <b> {{ wind_dir_degrees|int }}° {{ wind_speed_kt }} kt</b>
-                        <b> </b>
-                        {%- if wind_gust_kt %}
-                            <b> gust {{ wind_gust_kt }} kt</b>
-                        {%- endif %}
-                    {%- endif %}
-                {%- endif %}
-                <ul id="{{ ident }}">
-                    <li><b>METAR </b>{{ metar['raw_text'] }}</li>
-                    {%-if taf %}
-                        <li><b>TAF</b> {{ taf['raw_text'] }}</li>
-                    {%- endif %}
-                    
-                </ul>
-            </li>
-        {%- endfor %}
-    </ul>
+    <div id="airports">
+    {% for airport in airports %}
+        <div class="airport">
+            {% set ident = airport['ident'] %}
+            {% set metar = airport['metar'] %}
+            {% set taf = airport['taf'] %}
+            {% set cat = metar['flight_category'] %}
+            {% set wind_dir_degrees, wind_speed_kt,  wind_gust_kt = metar['wind_dir_degrees'], metar['wind_speed_kt'], metar['wind_gust_kt'] %}
+            <div class="airport_name">
+                    <a href="/remove_airport/{{ ident }}" title="Remove">&Cross;</a> <a href="/move_airport/{{ ident }}" title="Move Up">&uarr;</a>
+                    <a href="#{{ ident }}" onclick="toggle_display('{{ ident }}')">{{ ident }} </a><span>{{ airport['name'] }}</span> [<span>{{ airport['elevation_ft'] }} ft</span>]
+            {% if cat %}
+                <b class="{{ cat }}"> {{ cat }}</b>
+                {% if wind_dir_degrees and wind_speed_kt %}
+                    {% set wind_classes = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'] %}
+                    {% set wind_dir_degrees = (wind_dir_degrees|float) % 360 %}
+                    {% set wind_class = ((wind_dir_degrees) / 22.5 + 0.5)|round|int %}
+                    {% set wind_class =  wind_classes[wind_class] %}
+                    <span> Wind {{ wind_class }}</span>
+                    <span class="wind {{ wind_class }}">⮟</span>
+                    <!-- <span class="wind {{ wind_class }}"><img src="/north-small.png"/></span> 
+                    <span class="wind {{ wind_class }}">🡓</span>-->
+                    <b> {{ wind_dir_degrees|int }}° {{ wind_speed_kt }} kt</b>
+                    <b> </b>
+                    {% if wind_gust_kt %}
+                        <b> gust {{ wind_gust_kt }} kt</b>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="airport_info" id="{{ ident }}">
+                {%if metar %}
+                    <div><b> METAR &rarr; </b>{{ metar['raw_text'] }}</div>
+                {% endif %}
+                {%if taf %}
+                    <div><b>TAF &rarr; </b> {{ taf['raw_text'] }}</div>
+                {% endif %}
+                {% for runway in airport['runways'] %}
+                    <div><b>{{ runway['le_ident'] }} | {{ runway['he_ident'] }}</b>  {{ runway['surface'] }} | {{ runway['length_ft'] }} ft </div>
+                {% endfor %}
+        </div>
+    {% endfor %}
+    </div>    
     
 </body>
 </html>

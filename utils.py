@@ -26,7 +26,11 @@ GAE_PROJECTID = os.getenv('GOOGLE_CLOUD_PROJECT')
 Log.Write('GOOGLE_CLOUD_PROJECT = ' + GAE_PROJECTID)
 GAE_BUCKET = GAE_PROJECTID + '.appspot.com'
 
-save_in_download = False
+GAE_ENV = os.getenv('GAE_ENV', '')
+Log.Write('GAE_ENV = ' + GAE_ENV)
+is_production = GAE_ENV != ''
+
+save_in_download = not is_production
 
 # upload to file in google cloud
 def cloud_upload_bytes(destination_filename, bytes, content_type = 'application/octet-stream'):
@@ -34,15 +38,11 @@ def cloud_upload_bytes(destination_filename, bytes, content_type = 'application/
     storage_client = storage.Client()
     bucket = storage_client.bucket(GAE_BUCKET)
     blob = bucket.blob(destination_filename)
-    if save_in_download:
-        open('download/' + destination_filename, 'wb').write(bytes)
-
     return blob.upload_from_string(bytes, content_type = content_type)
-
-
 
 def cloud_upload_text(destination_filename, text):
     return cloud_upload_bytes(destination_filename, text.encode('utf-8'), 'text/plain')
+
 
 # download from file in google cloud
 def cloud_download_bytes(source_filename):
@@ -52,6 +52,8 @@ def cloud_download_bytes(source_filename):
     blob = bucket.blob(source_filename)
     if not blob.exists(): return None
     bytes = blob.download_as_bytes()
+    if save_in_download:
+        open('download/' + source_filename, 'wb').write(bytes)
     return bytes
 
 def cloud_download_text(source_filename):
@@ -62,6 +64,7 @@ def cloud_download_text(source_filename):
 
 
 def http_get_last_modified(url):
+    Log.Write('head %s' % url)
     response = requests.head(url)
     last_modified = response.headers['Last-Modified']
     Log.Write('Last-Modified %s %s' % (last_modified, url))

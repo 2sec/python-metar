@@ -2,7 +2,6 @@
 
 
 from flask import Flask
-from markupsafe import escape
 import flask
 import random
 
@@ -11,7 +10,10 @@ from datetime import timedelta
 
 import dataset
 
+
 app = Flask(__name__, static_folder='static', static_url_path='')
+app.jinja_env.trim_blocks = True
+app.jinja_env.lstrip_blocks = True
 
 random_value = random.getrandbits(64)
 
@@ -71,7 +73,7 @@ def move_airport(airport):
 
 
 #return airports matching given text
-#currently only the ICAO code is seached
+#currently only the ICAO code is searched
 #TODO: also search any word in the airport names
 @app.route('/suggest/<name>')
 def suggest(name):
