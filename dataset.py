@@ -162,61 +162,73 @@ class Cache(object):
 
 
     def calc_wind(self, airport):
-        for runway in airport['runways']:
-            runway['wind'] = ''
+        wind = {}
 
         metar = airport['metar']
-        if not metar: return
 
-        metar['wind_class'] = ''
+        if metar:
+            wind_dir_degrees = metar['wind_dir_degrees']
+            wind_speed_kt = metar['wind_speed_kt']
+            wind_gust_kt = metar['wind_gust_kt']
 
-        wind_dir_degrees = metar['wind_dir_degrees']
-        wind_speed_kt = metar['wind_speed_kt']
-        wind_gust_kt = metar['wind_gust_kt']
+            if wind_dir_degrees == '' or wind_speed_kt == '': return
+            if wind_gust_kt == '': wind_gust_kt = '0'
+            try:
+                wind_dir_degrees = int(wind_dir_degrees)
+                wind_speed_kt = int(wind_speed_kt)
+                wind_gust_kt = int(wind_gust_kt)
+            except:
+                pass
 
-        if wind_dir_degrees == '' or wind_speed_kt == '': return
-        if wind_gust_kt == '': wind_gust_kt = '0'
-        try:
-            wind_dir_degrees = int(wind_dir_degrees)
-            wind_speed_kt = int(wind_speed_kt)
-            wind_gust_kt = int(wind_gust_kt)
-        except:
-            return
+            wind_origin = int(wind_dir_degrees / 22.5 + 0.5)
+            if wind_origin > 15: wind_origin = 15
+            wind_origins = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
 
-        wind_class = int(wind_dir_degrees / 22.5 + 0.5)
-        wind_classes = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+            wind['wind_origin'] = wind_origins[wind_origin]
 
-        metar['wind_class'] = wind_classes[wind_class]
-        
+
+        runway_winds = []
 
         for runway in airport['runways']:
             runway_heading = runway['le_heading_degT']
             runway_heading = float(runway_heading)
 
-            angle = wind_dir_degrees - runway_heading
-            if angle < -90 or angle > 90: 
-                runway_heading = (runway_heading + 180) % 360
+            runway_wind = {}
+
+            if metar:
                 angle = wind_dir_degrees - runway_heading
-                runway['le_class'] = 'runway_red'
-                runway['he_class'] = 'runway_green'
-            else:
-                runway['le_class'] = 'runway_green'
-                runway['he_class'] = 'runway_red'
+                if angle < -90 or angle > 90: 
+                    runway_heading = (runway_heading + 180) % 360
+                    angle = wind_dir_degrees - runway_heading
+                    runway_wind['le_class'] = 'runway_red'
+                    runway_wind['he_class'] = 'runway_green'
+                else:
+                    runway_wind['le_class'] = 'runway_green'
+                    runway_wind['he_class'] = 'runway_red'
 
 
-            deg = math.radians(angle)
-            sin = math.sin(deg)
-            cos = math.cos(deg)
-            cross_wind = int(sin * wind_speed_kt)
-            head_wind = int(cos * wind_speed_kt)
+                deg = math.radians(angle)
+                sin = math.sin(deg)
+                cos = math.cos(deg)
+                cross_wind = int(sin * wind_speed_kt)
+                head_wind = int(cos * wind_speed_kt)
+                gust_cross_wind = int(sin * wind_gust_kt)
+                gust_head_wind = int(cos * wind_gust_kt)
 
-            if cross_wind < 0:
-                runway['crosswind_type'] = '↑'
-                cross_wind = -cross_wind
-            else:
-                runway['crosswind_type'] = '↓'
+                if cross_wind < 0:
+                    runway_wind['crosswind_type'] = '↑'
+                    cross_wind = -cross_wind
+                    gust_cross_wind = -gust_cross_wind
+                else:
+                    runway_wind['crosswind_type'] = '↓'
 
-            runway['wind'] = (cross_wind, head_wind)
+                runway_wind['wind'] = (cross_wind, head_wind, gust_cross_wind, gust_head_wind)
+
+            runway_winds.append(runway_wind)
+            
+        wind['runway_winds'] = runway_winds
+
+        return wind
 
 
 

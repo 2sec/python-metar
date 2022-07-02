@@ -4,14 +4,32 @@
 <meta charset="utf-8">
 <title>Home</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap" rel="stylesheet">
-<!--
-<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap" rel="stylesheet">
--->
+
+<!-- from https://fonts.google.com/specimen/Montserrat
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap');
+</style>
+ -->
+<style>
+/* latin */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 300;
+  font-display: block;
+  src: url(JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCs16Hw5aXo.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+
+<!-- from https://tarekraafat.github.io/autoComplete.js
 <script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/css/autoComplete.01.min.css">
+-->
+
+<script src="autocomplete.js"></script>
+<link rel="stylesheet" href="autocomplete.css">
+
 <style>
     body
     {
@@ -19,7 +37,7 @@
     }
     body, input
     { 
-        font-family: 'Montserrat', 'Open Sans', sans-serif; 
+        font-family: 'Montserrat', sans-serif; 
         font-size: 12pt;
     }
     
@@ -149,7 +167,7 @@
     </script>
 
     <div id="airports">
-    {% for airport in airports %}
+    {% for airport, airport_wind  in zip(airports, airport_winds) %}
         <div class="airport">
             {% set ident = airport['ident'] %}
             {% set metar = airport['metar'] %}
@@ -157,13 +175,13 @@
             <div class="airport_name">
                     <a href="/remove_airport/{{ ident }}" title="Remove">&Cross;</a> <a href="/move_airport/{{ ident }}" title="Move Up">&uarr;</a>
                     <a href="#{{ ident }}" onclick="toggle_display('{{ ident }}')">{{ ident }} </a><span>{{ airport['name'] }}</span> [<span>{{ airport['elevation_ft'] }} ft</span>]
-            {% if metar['wind_class'] %}
+            {% if airport_wind['wind_origin'] %}
                 <b class="{{ metar['flight_category'] }}"> {{ metar['flight_category'] }}</b>
-                <span> Wind {{ metar['wind_class'] }}</span>
-                <span class="wind {{ metar['wind_class'] }}">⮟</span>
+                <span> Wind {{ airport_wind['wind_origin'] }}</span>
+                <span class="wind {{ airport_wind['wind_origin'] }}">⮟</span>
                 <b> {{ metar['wind_dir_degrees'] }}° {{ metar['wind_speed_kt'] }} kt</b>
                 {% if metar['wind_gust_kt'] %}
-                    <b> gust {{ metar['wind_gust_kt'] }} kt</b>
+                    <b> gusting to {{ metar['wind_gust_kt'] }} kt</b>
                 {% endif %}
             {% endif %}
         </div>
@@ -174,12 +192,15 @@
                 {%if taf %}
                     <div><b>TAF &rarr; </b> {{ taf['raw_text'] }}</div>
                 {% endif %}
-                {% for runway in airport['runways'] %}
+                {% for runway, runway_wind  in zip(airport['runways'], airport_wind['runway_winds']) %}
                     <div>
-                        <b><span class="{{ runway['le_class'] }}">{{ runway['le_ident'] }}</span> | <span class="{{ runway['he_class'] }}">{{ runway['he_ident'] }}</span></b>  {{ runway['surface'] }} {{ runway['length_ft'] }} ft 
-                        {% set wind = runway['wind'] %}
+                        <b><span class="{{ runway_wind['le_class'] }}">{{ runway['le_ident'] }}</span> | <span class="{{ runway_wind['he_class'] }}">{{ runway['he_ident'] }}</span></b>  {{ runway['surface'] }} {{ runway['length_ft'] }} ft 
+                        {% set wind = runway_wind['wind'] %}
                         {% if wind %}
-                            <b> {{ runway['crosswind_type'] }} {{ wind[0] }} kt | &rarr; {{ wind[1] }} kt </b>
+                            <b> {{ runway_wind['crosswind_type'] }} {{ wind[0] }} kt | &rarr; {{ wind[1] }} kt </b>
+                            {% if wind[2] > 0 %}
+                                <b> gusting to  {{ runway_wind['crosswind_type'] }} {{ wind[2] }} kt | &rarr; {{ wind[3] }} kt </b>
+                            {% endif %}
                         {% endif %}
                     </div>
                 {% endfor %}
@@ -187,5 +208,12 @@
     {% endfor %}
     </div>    
     
+    <hr/>
+    <div>
+        <b>Disclaimer</b>
+        <br/>Do not rely on this site for flight planning or anything.
+        <br/>Only strictly necessary cookies are used on this site.
+    </div>
+
 </body>
 </html>

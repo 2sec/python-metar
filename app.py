@@ -14,6 +14,7 @@ import dataset
 app = Flask(__name__, static_folder='static', static_url_path='')
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
+app.jinja_env.globals.update(zip=zip)
 
 random_value = random.getrandbits(64)
 
@@ -31,14 +32,16 @@ def write_cookie(response, selected_airports):
 @app.route('/')
 def home():
     selected_airports = read_cookie()
-    airports = []    
+    
+    airport_winds = []
+    airports = []
     for airport in selected_airports:
         airport = dataset.cache.airports_dic.get(airport, None)
         if airport:
-            dataset.cache.calc_wind(airport)
+            airport_winds.append(dataset.cache.calc_wind(airport))
             airports.append(airport)
 
-    response = flask.make_response(flask.render_template('index.html', airports=airports, random_value=random_value))
+    response = flask.make_response(flask.render_template('index.html', airports = airports, airport_winds = airport_winds, random_value=random_value))
     write_cookie(response, selected_airports)
     return response
 
