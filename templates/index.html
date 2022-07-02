@@ -48,6 +48,10 @@
     .LIFR { color: magenta; }
 
     .wind { display: inline-block; font-family: 'Courier New'; }
+
+    .runway_red { color: red; }
+    .runway_green { color: green; }
+
     .N { transform: rotate(0deg); }
     .NNE { transform: rotate(22.5deg); }
     .NE { transform: rotate(45deg); }
@@ -150,27 +154,16 @@
             {% set ident = airport['ident'] %}
             {% set metar = airport['metar'] %}
             {% set taf = airport['taf'] %}
-            {% set cat = metar['flight_category'] %}
-            {% set wind_dir_degrees, wind_speed_kt,  wind_gust_kt = metar['wind_dir_degrees'], metar['wind_speed_kt'], metar['wind_gust_kt'] %}
             <div class="airport_name">
                     <a href="/remove_airport/{{ ident }}" title="Remove">&Cross;</a> <a href="/move_airport/{{ ident }}" title="Move Up">&uarr;</a>
                     <a href="#{{ ident }}" onclick="toggle_display('{{ ident }}')">{{ ident }} </a><span>{{ airport['name'] }}</span> [<span>{{ airport['elevation_ft'] }} ft</span>]
-            {% if cat %}
-                <b class="{{ cat }}"> {{ cat }}</b>
-                {% if wind_dir_degrees and wind_speed_kt %}
-                    {% set wind_classes = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'] %}
-                    {% set wind_dir_degrees = (wind_dir_degrees|float) % 360 %}
-                    {% set wind_class = ((wind_dir_degrees) / 22.5 + 0.5)|round|int %}
-                    {% set wind_class =  wind_classes[wind_class] %}
-                    <span> Wind {{ wind_class }}</span>
-                    <span class="wind {{ wind_class }}">⮟</span>
-                    <!-- <span class="wind {{ wind_class }}"><img src="/north-small.png"/></span> 
-                    <span class="wind {{ wind_class }}">🡓</span>-->
-                    <b> {{ wind_dir_degrees|int }}° {{ wind_speed_kt }} kt</b>
-                    <b> </b>
-                    {% if wind_gust_kt %}
-                        <b> gust {{ wind_gust_kt }} kt</b>
-                    {% endif %}
+            {% if metar['wind_class'] %}
+                <b class="{{ metar['flight_category'] }}"> {{ metar['flight_category'] }}</b>
+                <span> Wind {{ metar['wind_class'] }}</span>
+                <span class="wind {{ metar['wind_class'] }}">⮟</span>
+                <b> {{ metar['wind_dir_degrees'] }}° {{ metar['wind_speed_kt'] }} kt</b>
+                {% if metar['wind_gust_kt'] %}
+                    <b> gust {{ metar['wind_gust_kt'] }} kt</b>
                 {% endif %}
             {% endif %}
         </div>
@@ -182,7 +175,13 @@
                     <div><b>TAF &rarr; </b> {{ taf['raw_text'] }}</div>
                 {% endif %}
                 {% for runway in airport['runways'] %}
-                    <div><b>{{ runway['le_ident'] }} | {{ runway['he_ident'] }}</b>  {{ runway['surface'] }} | {{ runway['length_ft'] }} ft </div>
+                    <div>
+                        <b><span class="{{ runway['le_class'] }}">{{ runway['le_ident'] }}</span> | <span class="{{ runway['he_class'] }}">{{ runway['he_ident'] }}</span></b>  {{ runway['surface'] }} {{ runway['length_ft'] }} ft 
+                        {% set wind = runway['wind'] %}
+                        {% if wind %}
+                            <b> {{ runway['crosswind_type'] }} {{ wind[0] }} kt | &rarr; {{ wind[1] }} kt </b>
+                        {% endif %}
+                    </div>
                 {% endfor %}
         </div>
     {% endfor %}

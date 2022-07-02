@@ -35,6 +35,7 @@ def home():
     for airport in selected_airports:
         airport = dataset.cache.airports_dic.get(airport, None)
         if airport:
+            dataset.cache.calc_wind(airport)
             airports.append(airport)
 
     response = flask.make_response(flask.render_template('index.html', airports=airports, random_value=random_value))

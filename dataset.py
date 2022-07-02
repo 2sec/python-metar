@@ -2,6 +2,7 @@
 
 import csv
 import time
+import math
 
 import Log
 import utils
@@ -148,7 +149,7 @@ class Cache(object):
         modified, self.airports = download_ourairports_csv(self.airports, 'airports.csv', ['ident', 'name', 'elevation_ft'], only_read_existing = only_read_existing)
         any_modified |= modified
 
-        modified, self.runways = download_ourairports_csv(self.runways, 'runways.csv', ['airport_ident', 'length_ft', 'surface', 'le_ident', 'he_ident', 'closed' ], only_read_existing = only_read_existing)
+        modified, self.runways = download_ourairports_csv(self.runways, 'runways.csv', ['airport_ident', 'length_ft', 'surface', 'le_ident', 'he_ident', 'closed', 'le_heading_degT' ], only_read_existing = only_read_existing)
         any_modified |= modified
 
         modified, self.metars = download_aviationweather_csv(self.metars, 'metars.cache.csv', ['raw_text', 'station_id', 'flight_category', 'wind_dir_degrees', 'wind_speed_kt', 'wind_gust_kt'], only_read_existing = only_read_existing)
@@ -158,6 +159,66 @@ class Cache(object):
         any_modified |= modified
 
         return any_modified
+
+
+    def calc_wind(self, airport):
+        for runway in airport['runways']:
+            runway['wind'] = ''
+
+        metar = airport['metar']
+        if not metar: return
+
+        metar['wind_class'] = ''
+
+        wind_dir_degrees = metar['wind_dir_degrees']
+        wind_speed_kt = metar['wind_speed_kt']
+        wind_gust_kt = metar['wind_gust_kt']
+
+        if wind_dir_degrees == '' or wind_speed_kt == '': return
+        if wind_gust_kt == '': wind_gust_kt = '0'
+        try:
+            wind_dir_degrees = int(wind_dir_degrees)
+            wind_speed_kt = int(wind_speed_kt)
+            wind_gust_kt = int(wind_gust_kt)
+        except:
+            return
+
+        wind_class = int(wind_dir_degrees / 22.5 + 0.5)
+        wind_classes = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+
+        metar['wind_class'] = wind_classes[wind_class]
+        
+
+        for runway in airport['runways']:
+            runway_heading = runway['le_heading_degT']
+            runway_heading = float(runway_heading)
+
+            angle = wind_dir_degrees - runway_heading
+            if angle < -90 or angle > 90: 
+                runway_heading = (runway_heading + 180) % 360
+                angle = wind_dir_degrees - runway_heading
+                runway['le_class'] = 'runway_red'
+                runway['he_class'] = 'runway_green'
+            else:
+                runway['le_class'] = 'runway_green'
+                runway['he_class'] = 'runway_red'
+
+
+            deg = math.radians(angle)
+            sin = math.sin(deg)
+            cos = math.cos(deg)
+            cross_wind = int(sin * wind_speed_kt)
+            head_wind = int(cos * wind_speed_kt)
+
+            if cross_wind < 0:
+                runway['crosswind_type'] = '↑'
+                cross_wind = -cross_wind
+            else:
+                runway['crosswind_type'] = '↓'
+
+            runway['wind'] = (cross_wind, head_wind)
+
+
 
     # update in memory structures if they have changed
     def update(self):
@@ -208,14 +269,14 @@ class Cache(object):
             while taf and ident > taf['station_id']: taf = next(tafs_iter, None)
             if taf and ident == taf['station_id']: airport['taf'] = taf
 
-
             airport_runways =  []
-            elevation_ft = 0
+
             while runway and ident > runway['airport_ident']: runway = next(runways_iter)
             while runway and ident == runway['airport_ident']:
                 if runway['closed'] == '0':
                     airport_runways.append(runway)
                 runway = next(runways_iter)
+
             airport['runways'] = airport_runways
         
 

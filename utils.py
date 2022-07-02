@@ -30,7 +30,7 @@ GAE_ENV = os.getenv('GAE_ENV', '')
 Log.Write('GAE_ENV = ' + GAE_ENV)
 is_production = GAE_ENV != ''
 
-save_in_download = not is_production
+save_in_download = False and not is_production
 
 # upload to file in google cloud
 def cloud_upload_bytes(destination_filename, bytes, content_type = 'application/octet-stream'):
