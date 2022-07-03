@@ -1,0 +1,42 @@
+<div id="airports">
+    {% for airport, airport_wind  in zip(airports, airport_winds) %}
+        <div class="airport">
+            {% set ident = airport['ident'] %}
+            {% set metar = airport['metar'] %}
+            {% set taf = airport['taf'] %}
+            <div class="airport_name">
+                    <a href="/remove_airport/{{ ident }}" title="Remove">&Cross;</a> <a href="/move_airport/{{ ident }}" title="Move Up">&uarr;</a>
+                    <a href="#{{ ident }}" onclick="toggle_display('{{ ident }}')">{{ ident }} </a><span>{{ airport['name'] }}</span> [<span>{{ airport['elevation_ft'] }} ft</span>]
+            {% if airport_wind['wind_origin'] %}
+                <b class="{{ metar['flight_category'] }}"> {{ metar['flight_category'] }}</b>
+                <span> Wind {{ airport_wind['wind_origin'] }}</span>
+                <span class="wind {{ airport_wind['wind_origin'] }}">⮟</span>
+                <b> {{ metar['wind_dir_degrees'] }}° {{ metar['wind_speed_kt'] }} kt</b>
+                {% if metar['wind_gust_kt'] %}
+                    <b> gusting to {{ metar['wind_gust_kt'] }} kt</b>
+                {% endif %}
+            {% endif %}
+            </div>
+        </div>
+        <div class="airport_info" id="{{ ident }}">
+                {%if metar %}
+                    <div><b> METAR &rarr; </b>{{ metar['raw_text'] }}</div>
+                {% endif %}
+                {%if taf %}
+                    <div><b>TAF &rarr; </b> {{ taf['raw_text'] }}</div>
+                {% endif %}
+                {% for runway, runway_wind  in zip(airport['runways'], airport_wind['runway_winds']) %}
+                    <div>
+                        <b><span class="{{ runway_wind['le_class'] }}">{{ runway['le_ident'] }}</span> | <span class="{{ runway_wind['he_class'] }}">{{ runway['he_ident'] }}</span></b>  {{ runway['surface'] }} {{ runway['length_ft'] }} ft 
+                        {% set wind = runway_wind['wind'] %}
+                        {% if wind %}
+                            <b> {{ runway_wind['crosswind_type'] }} {{ wind[0] }} kt | &rarr; {{ wind[1] }} kt </b>
+                            {% if wind[2] > 0 %}
+                                <b> gusting to  {{ runway_wind['crosswind_type'] }} {{ wind[2] }} kt | &rarr; {{ wind[3] }} kt </b>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+        </div>
+    {% endfor %}
+</div>    

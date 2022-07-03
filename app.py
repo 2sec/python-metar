@@ -15,12 +15,14 @@ import utils
 app = Flask(__name__, static_folder='static', static_url_path='')
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
+#this allows the zip function to the be callable in the templates
 app.jinja_env.globals.update(zip=zip)
 
 random_value = random.getrandbits(64)
 static_version = '20220703-01'
 static_path = '/cache/' + static_version + '/'
 
+# cache versioning for static files
 @app.route('/cache/<version>/<filename>')
 def cache(version, filename):
         response = flask.send_from_directory('./static/', filename)
@@ -42,8 +44,8 @@ def write_cookie(response, selected_airports):
     response.set_cookie('airports', ','.join(selected_airports), expires=expires)
 
 
-@app.route('/')
-def home():
+@app.route('/airports')
+def airports(template = 'airports.html'):
     selected_airports = read_cookie()
 
     airport_winds = []
@@ -54,9 +56,14 @@ def home():
             airport_winds.append(dataset.cache.calc_wind(airport))
             airports.append(airport)
 
-    response = flask.make_response(flask.render_template('index.html', airports = airports, airport_winds = airport_winds, random_value=random_value, static_version=static_version, static_path=static_path))
+    response = flask.make_response(flask.render_template(template, airports = airports, airport_winds = airport_winds, random_value=random_value, static_version=static_version, static_path=static_path))
     write_cookie(response, selected_airports)
     return response
+
+@app.route('/')
+def home():
+    return airports('index.html')
+    
 
 
 # add, remove or move an airport up in the list
