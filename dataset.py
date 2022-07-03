@@ -27,100 +27,99 @@ def read_if_changed(filename, new_last_modified):
     return content
 
 
-# download the given file but only if it has changed
-def download_aviationweather_csv(output_list, filename, fields, only_read_existing = False):
+# read the given csv filename and return a list of dictionaries.
+# if the file has not changed, return the existing list
+def read_csv_if_newer(filename,  output_list, fields, quoting):
+
+    new_last_modified = utils.tmp_read(filename)
+
+    modified = False
+
+    content = read_if_changed(filename, new_last_modified)
+    if content:
+        rows = csv.DictReader(io.StringIO(content), quoting = quoting)
+
+        output_list = []
+        for row in rows:
+
+            # sometime rows are malformed
+            skip = False
+            for key in fields: 
+                if key not in row: skip = True
+
+            if skip:
+                continue
+
+            row = { key: row[key] for key in fields}
+            output_list.append(row)
+
+        output_list.sort(key=lambda item: item[fields[0]] )
+
+        modified = True
+
+    return modified, output_list
+
+
+
+
+# download the given file from the source and updates it on our cloud
+def download_aviationweather_csv(filename):
     base_url = 'https://www.aviationweather.gov/adds/dataserver_current/current/'
 
     url = base_url + filename
 
     new_last_modified = utils.tmp_read(filename)
 
-    modified = False
+    modified, response, new_last_modified = utils.http_download_if_newer(url, new_last_modified)
+    if modified:
+        content = response.content.decode('utf-8')
+        #default debug header:
+        #No errors
+        #No warnings
+        #474 ms
+        #data source=metars
+        #4809 results
 
-    if not only_read_existing:
-        modified, response, new_last_modified = utils.http_download_if_newer(url, new_last_modified)
-        if modified:
-            content = response.content.decode('utf-8')
-            #default debug header:
-            #No errors
-            #No warnings
-            #474 ms
-            #data source=metars
-            #4809 results
+        n = -1
+        for i in range(0,5):
+            n = content.index('\n', n+1)
+        debug_header = content[0:n]
 
-            n = -1
-            for i in range(0,5):
-                n = content.index('\n', n+1)
-            debug_header = content[0:n]
+        content = content[n+1:]
 
-            content = content[n+1:]
+        Log.Write(debug_header)
 
-            Log.Write(debug_header)
+        #upload the new file
+        utils.cloud_upload_text(filename, content)
 
-            #upload the new file
-            utils.cloud_upload_text(filename, content)
+        #signal the file has changed
+        utils.tmp_write(filename, new_last_modified)
 
-            #signal the file has changed
-            utils.tmp_write(filename, new_last_modified)
-
-        return modified, output_list
-
-            
-
-    content = read_if_changed(filename, new_last_modified)
-    if content:
-        rows = csv.DictReader(io.StringIO(content), quoting=csv.QUOTE_NONE)
-
-        output_list = []
-        for row in rows:
-            row = { key: row[key] for key in fields}
-            output_list.append(row)
-
-        output_list.sort(key=lambda item: item['station_id'])
-
-        modified = True
+    return modified
 
 
-    return modified, output_list
-
-
-
-
-def download_ourairports_csv(output_list, filename, fields, only_read_existing = False):
+def download_ourairports_csv(filename):
     base_url = 'https://davidmegginson.github.io/ourairports-data/'
 
     url = base_url + filename
 
     new_last_modified = utils.tmp_read(filename)
 
-    modified = False
+    modified, response, new_last_modified = utils.http_download_if_newer(url, new_last_modified)
+    if modified:
+        content = response.content.decode('utf-8')
+        #upload the new file
+        utils.cloud_upload_text(filename, content)
 
-    if not only_read_existing:
-        modified, response, new_last_modified = utils.http_download_if_newer(url, new_last_modified)
-        if modified:
-            content = response.content.decode('utf-8')
-            #upload the new file
-            utils.cloud_upload_text(filename, content)
+        #signal the file has changed
+        utils.tmp_write(filename, new_last_modified)
 
-            #signal the file has changed
-            utils.tmp_write(filename, new_last_modified)
-
-        return modified, output_list
+    return modified
 
 
-    content = read_if_changed(filename, new_last_modified)
-    if content:
-        rows = csv.DictReader(io.StringIO(content))
-        
-        output_list = []
-        for row in rows:
-            row = { key: row[key] for key in fields}
-            output_list.append(row)
 
-        output_list.sort(key=lambda item: item[fields[0]])
-        modified = True
 
-    return modified, output_list
+
 
 
 
@@ -141,102 +140,37 @@ class Cache(object):
             self.airports_dic = cache.airports_dic
             self.airport_idents = cache.airport_idents
 
+    # download all files from the source, if they have changed
+    def download(self):
 
-    # return true only if one of the files has changed
-    def download(self, only_read_existing = False):
+        download_ourairports_csv('airports.csv')
+        download_ourairports_csv('runways.csv')
+        download_aviationweather_csv('metars.cache.csv')
+        download_aviationweather_csv('tafs.cache.csv')
+
+
+    # update in memory structures only if they have changed
+    def update(self):
+        Log.Write('testing')
+
         any_modified = False
 
-        modified, self.airports = download_ourairports_csv(self.airports, 'airports.csv', ['ident', 'name', 'elevation_ft'], only_read_existing = only_read_existing)
-        any_modified |= modified
-
-        modified, self.runways = download_ourairports_csv(self.runways, 'runways.csv', ['airport_ident', 'length_ft', 'surface', 'le_ident', 'he_ident', 'closed', 'le_heading_degT' ], only_read_existing = only_read_existing)
-        any_modified |= modified
-
-        modified, self.metars = download_aviationweather_csv(self.metars, 'metars.cache.csv', ['raw_text', 'station_id', 'flight_category', 'wind_dir_degrees', 'wind_speed_kt', 'wind_gust_kt'], only_read_existing = only_read_existing)
-        any_modified |= modified
-
-        modified, self.tafs = download_aviationweather_csv(self.tafs, 'tafs.cache.csv', ['raw_text', 'station_id'], only_read_existing = only_read_existing)
-        any_modified |= modified
-
-        return any_modified
-
-
-    def calc_wind(self, airport):
-        wind = {}
-
-        metar = airport['metar']
-
-        if metar:
-            wind_dir_degrees = metar['wind_dir_degrees']
-            wind_speed_kt = metar['wind_speed_kt']
-            wind_gust_kt = metar['wind_gust_kt']
-
-            if wind_dir_degrees == '' or wind_speed_kt == '': return
-            if wind_gust_kt == '': wind_gust_kt = '0'
-            try:
-                wind_dir_degrees = int(wind_dir_degrees)
-                wind_speed_kt = int(wind_speed_kt)
-                wind_gust_kt = int(wind_gust_kt)
-            except:
-                pass
-
-            wind_origin = int(wind_dir_degrees / 22.5 + 0.5)
-            if wind_origin > 15: wind_origin = 15
-            wind_origins = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
-
-            wind['wind_origin'] = wind_origins[wind_origin]
-
-
-        runway_winds = []
-
-        for runway in airport['runways']:
-            runway_heading = runway['le_heading_degT']
-            runway_heading = float(runway_heading)
-
-            runway_wind = {}
-
-            if metar:
-                angle = wind_dir_degrees - runway_heading
-                if angle < -90 or angle > 90: 
-                    runway_heading = (runway_heading + 180) % 360
-                    angle = wind_dir_degrees - runway_heading
-                    runway_wind['le_class'] = 'runway_red'
-                    runway_wind['he_class'] = 'runway_green'
-                else:
-                    runway_wind['le_class'] = 'runway_green'
-                    runway_wind['he_class'] = 'runway_red'
-
-
-                deg = math.radians(angle)
-                sin = math.sin(deg)
-                cos = math.cos(deg)
-                cross_wind = int(sin * wind_speed_kt)
-                head_wind = int(cos * wind_speed_kt)
-                gust_cross_wind = int(sin * wind_gust_kt)
-                gust_head_wind = int(cos * wind_gust_kt)
-
-                if cross_wind < 0:
-                    runway_wind['crosswind_type'] = '↑'
-                    cross_wind = -cross_wind
-                    gust_cross_wind = -gust_cross_wind
-                else:
-                    runway_wind['crosswind_type'] = '↓'
-
-                runway_wind['wind'] = (cross_wind, head_wind, gust_cross_wind, gust_head_wind)
-
-            runway_winds.append(runway_wind)
-            
-        wind['runway_winds'] = runway_winds
-
-        return wind
-
-
-
-    # update in memory structures if they have changed
-    def update(self):
         #if nothing changed: do nothing
-        if not self.download(True):
+        modified, self.airports = read_csv_if_newer('airports.csv', self.airports, ['ident', 'name', 'elevation_ft'], csv.QUOTE_MINIMAL)
+        any_modified |= modified
+
+        modified, self.runways = read_csv_if_newer('runways.csv', self.runways, ['airport_ident', 'length_ft', 'surface', 'le_ident', 'he_ident', 'closed', 'le_heading_degT'], csv.QUOTE_MINIMAL)
+        any_modified |= modified
+
+        modified, self.metars = read_csv_if_newer('metars.cache.csv', self.metars, ['station_id', 'raw_text', 'flight_category', 'wind_dir_degrees', 'wind_speed_kt', 'wind_gust_kt'], csv.QUOTE_NONE)
+        any_modified |= modified
+
+        modified, self.tafs = read_csv_if_newer('tafs.cache.csv', self.tafs, ['station_id', 'raw_text'], csv.QUOTE_NONE)
+        any_modified |= modified
+
+        if not any_modified:
             return False
+
 
         Log.Write('updating')
 
@@ -298,10 +232,83 @@ class Cache(object):
         return True
 
 
+    def calc_wind(self, airport):
+        wind = {}
+
+        metar = airport['metar']
+
+        if metar:
+            wind_dir_degrees = metar['wind_dir_degrees']
+            wind_speed_kt = metar['wind_speed_kt']
+            wind_gust_kt = metar['wind_gust_kt']
+
+            if wind_dir_degrees == '' or wind_speed_kt == '': return
+            if wind_gust_kt == '': wind_gust_kt = '0'
+            try:
+                wind_dir_degrees = int(wind_dir_degrees)
+                wind_speed_kt = int(wind_speed_kt)
+                wind_gust_kt = int(wind_gust_kt)
+            except:
+                pass
+
+            wind_origin = int(wind_dir_degrees / 22.5 + 0.5)
+            if wind_origin > 15: wind_origin = 15
+            wind_origins = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+
+            wind['wind_origin'] = wind_origins[wind_origin]
+
+
+        runway_winds = []
+
+        for runway in airport['runways']:
+            runway_heading = runway['le_heading_degT']
+            try:
+                runway_heading = float(runway_heading)
+            except:
+                runway_heading = None
+
+            runway_wind = {}
+
+            if metar and runway_heading != None:
+                angle = wind_dir_degrees - runway_heading
+                if angle < -90 or angle > 90: 
+                    runway_heading = (runway_heading + 180) % 360
+                    angle = wind_dir_degrees - runway_heading
+                    runway_wind['le_class'] = 'runway_red'
+                    runway_wind['he_class'] = 'runway_green'
+                else:
+                    runway_wind['le_class'] = 'runway_green'
+                    runway_wind['he_class'] = 'runway_red'
+
+
+                deg = math.radians(angle)
+                sin = math.sin(deg)
+                cos = math.cos(deg)
+                cross_wind = int(sin * wind_speed_kt)
+                head_wind = int(cos * wind_speed_kt)
+                gust_cross_wind = int(sin * wind_gust_kt)
+                gust_head_wind = int(cos * wind_gust_kt)
+
+                if cross_wind < 0:
+                    runway_wind['crosswind_type'] = '↑'
+                    cross_wind = -cross_wind
+                    gust_cross_wind = -gust_cross_wind
+                else:
+                    runway_wind['crosswind_type'] = '↓'
+
+                runway_wind['wind'] = (cross_wind, head_wind, gust_cross_wind, gust_head_wind)
+
+            runway_winds.append(runway_wind)
+            
+        wind['runway_winds'] = runway_winds
+
+        return wind
+
+
 cache = Cache()
 
 if utils.is_production:
-    #force a download at startup
+    #check if files need to be downloaded at startup
     cache.download()
 
 #update in memory datasets every 30s in the background

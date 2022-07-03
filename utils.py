@@ -30,10 +30,13 @@ GAE_ENV = os.getenv('GAE_ENV', '')
 Log.Write('GAE_ENV = ' + GAE_ENV)
 is_production = GAE_ENV != ''
 
-save_in_download = False and not is_production
+local_download = not is_production
 
 # upload to file in google cloud
 def cloud_upload_bytes(destination_filename, bytes, content_type = 'application/octet-stream'):
+    if local_download:
+        open('download/' + destination_filename, 'wb').write(bytes)
+        return
     Log.Write('cloud upload to %s/%s' % (GAE_BUCKET, destination_filename))
     storage_client = storage.Client()
     bucket = storage_client.bucket(GAE_BUCKET)
@@ -46,14 +49,14 @@ def cloud_upload_text(destination_filename, text):
 
 # download from file in google cloud
 def cloud_download_bytes(source_filename):
+    if local_download:
+        return open('download/' + source_filename, 'rb').read()
     Log.Write('cloud download from %s/%s' % (GAE_BUCKET, source_filename))
     storage_client = storage.Client()
     bucket = storage_client.bucket(GAE_BUCKET)
     blob = bucket.blob(source_filename)
     if not blob.exists(): return None
     bytes = blob.download_as_bytes()
-    if save_in_download:
-        open('download/' + source_filename, 'wb').write(bytes)
     return bytes
 
 def cloud_download_text(source_filename):

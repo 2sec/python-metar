@@ -9,6 +9,7 @@ from datetime import datetime
 from datetime import timedelta
 
 import dataset
+import utils
 
 
 app = Flask(__name__, static_folder='static', static_url_path='')
@@ -17,6 +18,18 @@ app.jinja_env.lstrip_blocks = True
 app.jinja_env.globals.update(zip=zip)
 
 random_value = random.getrandbits(64)
+static_version = '20220703-01'
+static_path = '/cache/' + static_version + '/'
+
+@app.route('/cache/<version>/<filename>')
+def cache(version, filename):
+        response = flask.send_from_directory('./static/', filename)
+        response.headers['Cache-Control']  = 'max-age=31536000, immutable'
+        for header in ['Expires', 'ETag', 'Last-Modified']:
+            if header in response.headers:
+                del response.headers[header]
+        return response
+
 
 def read_cookie():
     selected_airports = flask.request.cookies.get('airports')
@@ -32,7 +45,7 @@ def write_cookie(response, selected_airports):
 @app.route('/')
 def home():
     selected_airports = read_cookie()
-    
+
     airport_winds = []
     airports = []
     for airport in selected_airports:
@@ -41,7 +54,7 @@ def home():
             airport_winds.append(dataset.cache.calc_wind(airport))
             airports.append(airport)
 
-    response = flask.make_response(flask.render_template('index.html', airports = airports, airport_winds = airport_winds, random_value=random_value))
+    response = flask.make_response(flask.render_template('index.html', airports = airports, airport_winds = airport_winds, random_value=random_value, static_version=static_version, static_path=static_path))
     write_cookie(response, selected_airports)
     return response
 
@@ -98,7 +111,7 @@ def suggest(name):
 #called by GAE every min
 @app.route('/tasks/download')
 def download():
-    if flask.request.headers.get('X-Appengine-Cron', None) != 'true':
+    if flask.request.headers.get('X-Appengine-Cron', None) != 'true' and utils.is_production:
         return 'wot'
     dataset.cache.download()
     return 'duh'
