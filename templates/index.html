@@ -81,11 +81,11 @@
     .S { transform: rotate(180deg); }
     .SSW { transform: rotate(202.5deg); }
     .SW { transform: rotate(-135deg); }
-    .WSW { transform: rotate(-114.5deg); }
+    .WSW { transform: rotate(-112.5deg); }
     .W { transform: rotate(-90deg); }
-    .WNW { transform: rotate(-69.5deg); }
+    .WNW { transform: rotate(-67.5deg); }
     .NW { transform: rotate(-45deg); }
-    .NNW { transform: rotate(-24.5deg); }
+    .NNW { transform: rotate(-22.5deg); }
 </style>
 <script>
     function toggle_display(id)
@@ -176,11 +176,10 @@
                     clearTimeout(timeout)
                     console.log('reloaded')
                 }).catch((err) => console.log(err));
-
             }
             setTimeout(test_idle, 5 * 1000);
         } 
-        
+
         test_idle();
     }
     </script>

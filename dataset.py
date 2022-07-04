@@ -241,45 +241,59 @@ class Cache(object):
             wind_dir_degrees = metar['wind_dir_degrees']
             wind_speed_kt = metar['wind_speed_kt']
             wind_gust_kt = metar['wind_gust_kt']
-
-            if wind_dir_degrees == '' or wind_speed_kt == '': return
             if wind_gust_kt == '': wind_gust_kt = '0'
+
             try:
                 wind_dir_degrees = int(wind_dir_degrees)
                 wind_speed_kt = int(wind_speed_kt)
                 wind_gust_kt = int(wind_gust_kt)
             except:
-                pass
+                metar = None
 
+        if metar:
             wind_origin = int(wind_dir_degrees / 22.5 + 0.5)
             if wind_origin > 15: wind_origin = 15
             wind_origins = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
-
             wind['wind_origin'] = wind_origins[wind_origin]
 
 
         runway_winds = []
 
         for runway in airport['runways']:
-            runway_heading = runway['le_heading_degT']
+
             try:
+                runway_heading = runway['le_heading_degT']
                 runway_heading = float(runway_heading)
             except:
                 runway_heading = None
 
+            if runway_heading is None:
+                try:
+                    n = 0
+                    runway_heading = runway['le_ident']
+                    for i in runway_heading:
+                        if not i.isnumeric(): break
+                        n += 1
+                    runway_heading = runway_heading[0:n]
+                    runway_heading = int(runway_heading) * 10
+                except:
+                    runway_heading = None
+
             runway_wind = {}
 
             if metar and runway_heading != None:
-                angle = wind_dir_degrees - runway_heading
+                runway_wind['le_heading'] = runway_heading
+                angle = utils.angle_diff(wind_dir_degrees, runway_heading)
                 if angle < -90 or angle > 90: 
                     runway_heading = (runway_heading + 180) % 360
-                    angle = wind_dir_degrees - runway_heading
+                    angle = utils.angle_diff(wind_dir_degrees, runway_heading)
                     runway_wind['le_class'] = 'runway_red'
                     runway_wind['he_class'] = 'runway_green'
                 else:
                     runway_wind['le_class'] = 'runway_green'
                     runway_wind['he_class'] = 'runway_red'
 
+                runway_wind['crosswind_angle'] = angle
 
                 deg = math.radians(angle)
                 sin = math.sin(deg)
@@ -307,7 +321,7 @@ class Cache(object):
 
 cache = Cache()
 
-if utils.is_production:
+if True or utils.is_production:
     #check if files need to be downloaded at startup
     cache.download()
 

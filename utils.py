@@ -174,6 +174,10 @@ def socket_create(reuse = False, nodelay = True):
     return sock
 
 
+# difference of two angles in degrees
+def angle_diff(angle1, angle2):
+    angle = angle1 - angle2
+    return (angle + 180) % 360 - 180
 
 
 
