@@ -1,5 +1,8 @@
 <div id="airports">
-    {% for airport, airport_wind  in zip(airports, airport_winds) %}
+        <div id="status">
+            <b>Last Update </b>{{ now }}Z
+        </div>
+        {% for airport, airport_wind  in zip(airports, airport_winds) %}
         <div class="airport">
             {% set ident = airport['ident'] %}
             {% set metar = airport['metar'] %}
@@ -21,7 +24,14 @@
         </div>
         <div class="airport_info" id="{{ ident }}">
                 {%if metar %}
-                    <div><b> METAR &rarr; </b>{{ metar['raw_text'] }}</div>
+                    <div>
+                        <b> METAR</b>
+                        {%if metar['diff'] %}
+                            <span class="metar-valid-{{ metar['valid']}}">[{{metar['diff']|int }} min ago]</span>
+                        {%endif %}
+                        <b> &rarr; </b>
+                        {{ metar['raw_text'] }}
+                    </div>
                 {% endif %}
                 {%if taf %}
                     <div><b>TAF &rarr; </b> {{ taf['raw_text'] }}</div>

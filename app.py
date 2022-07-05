@@ -48,6 +48,8 @@ def write_cookie(response, selected_airports):
 def airports(template = 'airports.html'):
     selected_airports = read_cookie()
 
+    now = utils.ShortDateTime()
+
     airport_winds = []
     airports = []
     for airport in selected_airports:
@@ -56,7 +58,7 @@ def airports(template = 'airports.html'):
             airport_winds.append(dataset.cache.calc_wind(airport))
             airports.append(airport)
 
-    response = flask.make_response(flask.render_template(template, airports = airports, airport_winds = airport_winds, random_value=random_value, static_version=static_version, static_path=static_path))
+    response = flask.make_response(flask.render_template(template, now = now, airports = airports, airport_winds = airport_winds, random_value=random_value, static_version=static_version, static_path=static_path))
     write_cookie(response, selected_airports)
     return response
 
@@ -123,6 +125,10 @@ def download():
     dataset.cache.download()
     return 'duh'
 
+
+@app.route('/_ah/warmup')
+def warmup():
+    return 'duh'
 
 if __name__ == "__main__":
     app.run(debug=True)

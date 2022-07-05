@@ -8,6 +8,8 @@ import Log
 import utils
 import io
 
+from datetime import datetime
+
 
 # this dict contains the last modification dates of all the files kept in memory
 last_modified_dic = {}
@@ -178,8 +180,31 @@ class Cache(object):
         metars = self.metars
         runways = self.runways
 
-        #TODO: AMD COR CNL
+        now = datetime.utcnow()
 
+        for metar in metars:
+            raw_text = metar['raw_text']
+            # this happens
+            if raw_text[0] == '"': raw_text = metar['raw_text'] = raw_text[1:]
+            metar['diff'] = ''
+
+            try:
+                day = int(raw_text[5:7])
+                hour = int(raw_text[7:9])
+                minute = int(raw_text[9:11])
+                month = now.month
+                year = now.year
+                date = datetime(year, month, day, hour, minute)
+                diff = (now - date).total_seconds() // 60
+                # TODO: adjust diff for all cases (previous day, month, year..)
+                metar['diff'] = diff
+                metar['valid'] = str(diff < 35)
+            except:
+                Log.Write('Invalid METAR %s' % raw_text)
+
+
+
+        #TODO: AMD COR CNL
         #inconsistency in the source - sometimes a TAF starts with the word TAF, sometimes not
         for i, taf in enumerate(tafs):
             raw_text = taf['raw_text']
