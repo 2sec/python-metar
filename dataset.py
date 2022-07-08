@@ -31,9 +31,11 @@ def read_if_changed(filename, new_last_modified):
 
 # read the given csv filename and return a list of dictionaries.
 # if the file has not changed, return the existing list
+# if an existing list is not given, read the file unconditionnally
 def read_csv_if_newer(filename,  output_list, fields, quoting):
 
-    new_last_modified = utils.tmp_read(filename)
+    new_last_modified = None
+    if output_list: new_last_modified = utils.tmp_read(filename)
 
     modified = False
 
@@ -121,6 +123,39 @@ def download_ourairports_csv(filename):
 
 
 
+def download_metar_stations(filename):
+    url = 'http://www.weathergraphics.com/identifiers/master-location-identifier-database-202207_standard.csv'
+
+    # TODO: test if the url has changed
+
+    new_last_modified = utils.tmp_read(filename)
+
+    modified, response, new_last_modified = utils.http_download_if_newer(url, new_last_modified)
+    if modified:
+        content = response.content.decode('iso-8859-1')
+        #default  header:
+        #Master Location Identifier Database (MLID) - Standard Version																			
+        #Edition 2022.07 | July 2022 | Series E | Effective dates: FAA: 2022-06-16 | ICAO: 2022-06-16 (AIRAC 2206) | WMO: 2022-07-01																			
+        #©2010-2022 Weather Graphics / www.weathergraphics.com / servicedesk@weathergraphics.com / All rights reserved																			
+        #This database is not approved for navigational use.  Rows marked with x" in the status column are obsolete and for historical reference only.  For complete information on this data, refer to the documentation at: www.weathergraphics.com/identifiers																			
+        #
+
+        n = -1
+        for i in range(0,5):
+            n = content.index('\n', n+1)
+        debug_header = content[0:n]
+
+        content = content[n+1:]
+
+        Log.Write(debug_header)
+
+        #upload the new file
+        utils.cloud_upload_text(filename, content)
+
+        #signal the file has changed
+        utils.tmp_write(filename, new_last_modified)
+
+    return modified
 
 
 
@@ -133,6 +168,7 @@ class Cache(object):
         self.tafs = []
         self.airports_dic = {}
         self.airport_idents = []
+        self.last_download = None
 
         if cache:
             self.airports = cache.airports
@@ -141,12 +177,55 @@ class Cache(object):
             self.tafs = cache.tafs
             self.airports_dic = cache.airports_dic
             self.airport_idents = cache.airport_idents
+            self.last_download = cache.last_download
 
     # download all files from the source, if they have changed
     def download(self):
 
-        download_ourairports_csv('airports.csv')
-        download_ourairports_csv('runways.csv')
+        # no need to download those files more than once a day
+        now = datetime.utcnow()
+        if(self.last_download is None or (now - self.last_download).days >= 1):
+            modified1 = download_metar_stations('stations.csv')
+            modified2 = download_ourairports_csv('airports.csv')
+            download_ourairports_csv('runways.csv')
+
+            #merge airports and stations
+            if modified1 or modified2:
+                modified, airports = read_csv_if_newer('airports.csv', None, ['ident', 'name', 'elevation_ft'], csv.QUOTE_MINIMAL)
+                modified, stations = read_csv_if_newer('stations.csv', None, ['icao', 'station_name', 'elev'], csv.QUOTE_MINIMAL)
+
+                new_stations = []
+                airports_set = { airport['ident'] for airport in airports }
+
+                for station in stations:
+                    ident = station['icao']
+                    if ident == '': continue
+
+                    if ident not in airports_set:
+                        new_stations.append(station)
+
+                for station in new_stations:
+                    airports.append({'ident': station['icao'], 'name': station['station_name'], 'elevation_ft': station['elev']})
+
+                airports.sort(key=lambda item: item['ident'] )
+
+
+                content = io.StringIO()
+                writer = csv.DictWriter(content, airports[0].keys(), quoting = csv.QUOTE_MINIMAL)
+                writer.writeheader()
+                writer.writerows(airports)
+                content.seek(0)
+                content = content.read()
+
+                filename = 'airports_and_stations.csv'
+                utils.cloud_upload_text(filename, content)
+                #signal the file has changed
+                utils.tmp_write(filename, str(now))
+
+                self.last_download = now
+
+
+
         download_aviationweather_csv('metars.cache.csv')
         download_aviationweather_csv('tafs.cache.csv')
 
@@ -158,7 +237,7 @@ class Cache(object):
         any_modified = False
 
         #if nothing changed: do nothing
-        modified, self.airports = read_csv_if_newer('airports.csv', self.airports, ['ident', 'name', 'elevation_ft'], csv.QUOTE_MINIMAL)
+        modified, self.airports = read_csv_if_newer('airports_and_stations.csv', self.airports, ['ident', 'name', 'elevation_ft'], csv.QUOTE_MINIMAL)
         any_modified |= modified
 
         modified, self.runways = read_csv_if_newer('runways.csv', self.runways, ['airport_ident', 'length_ft', 'surface', 'le_ident', 'he_ident', 'closed', 'le_heading_degT'], csv.QUOTE_MINIMAL)
@@ -346,7 +425,7 @@ class Cache(object):
 
 cache = Cache()
 
-if True or utils.is_production:
+if utils.is_production or __name__ == "__main__":
     #check if files need to be downloaded at startup
     cache.download()
 
