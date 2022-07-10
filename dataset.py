@@ -34,6 +34,7 @@ def read_if_changed(filename, new_last_modified):
 # if an existing list is not given, read the file unconditionnally
 def read_csv_if_newer(filename,  output_list, fields, quoting):
 
+
     new_last_modified = None
     if output_list: new_last_modified = utils.tmp_read(filename)
 
@@ -421,7 +422,7 @@ class Cache(object):
 
 cache = Cache()
 
-if True or utils.is_production or __name__ == "__main__":
+if utils.is_production or __name__ == "__main__":
     #check if files need to be downloaded at startup
     cache.download()
 
