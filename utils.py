@@ -3,8 +3,8 @@
 
 import threading
 import random
-#import numpy as np
 import os
+import io
 import atexit
 import re
 import requests
@@ -12,6 +12,7 @@ import requests
 
 import Log
 from google.cloud import storage
+import boto3
 
 #various helper functions are put here, and also StartThread() and SendMail(), see below
 
@@ -22,24 +23,56 @@ random.seed(random_state)
 #np.random.seed(random_state)
 
 
-GAE_PROJECTID = os.getenv('GOOGLE_CLOUD_PROJECT')
-Log.Write('GOOGLE_CLOUD_PROJECT = ' + GAE_PROJECTID)
+
+GAE_PROJECTID = os.getenv('GOOGLE_CLOUD_PROJECT', '')
 GAE_BUCKET = GAE_PROJECTID + '.appspot.com'
-
 GAE_ENV = os.getenv('GAE_ENV', '')
-Log.Write('GAE_ENV = ' + GAE_ENV)
-is_production = GAE_ENV != ''
+USE_GAE = GAE_PROJECTID != ''
+BUCKET = GAE_BUCKET
 
+USE_AWS = False
+
+AWS_PROJECTID = os.getenv('AWS_PROJECT', '')
+
+if AWS_PROJECTID != '':
+    USE_AWS = True
+    USE_GAE = False
+    BUCKET = AWS_PROJECTID
+
+
+is_production = GAE_ENV != '' 
 local_download = not is_production
 
-# upload to file in google cloud
+Log.Write('GOOGLE_CLOUD_PROJECT = ' + GAE_PROJECTID)
+Log.Write('GAE_ENV = ' + GAE_ENV)
+Log.Write('AWS_PROJECT = ' + AWS_PROJECTID)
+
+
+def create_default_bucket():
+    Log.Write('creating default bucket')
+    s3_client = boto3.client('s3')
+    s3_client.create_bucket(Bucket=BUCKET)
+
+
+if AWS_PROJECTID != '':
+    create_default_bucket()
+
+
+# upload to file in Google or AWS cloud
 def cloud_upload_bytes(destination_filename, bytes, content_type = 'application/octet-stream'):
     if local_download:
         open('download/' + destination_filename, 'wb').write(bytes)
         return
-    Log.Write('cloud upload to %s/%s' % (GAE_BUCKET, destination_filename))
+    
+    Log.Write('cloud upload to %s/%s' % (BUCKET, destination_filename))
+
+    if USE_AWS:
+        storage_client = boto3.client('s3')
+        bytes = io.BytesIO(bytes)
+        return storage_client.upload_fileobj(bytes, BUCKET, destination_filename)
+
     storage_client = storage.Client()
-    bucket = storage_client.bucket(GAE_BUCKET)
+    bucket = storage_client.bucket(BUCKET)
     blob = bucket.blob(destination_filename)
     return blob.upload_from_string(bytes, content_type = content_type)
 
@@ -47,13 +80,21 @@ def cloud_upload_text(destination_filename, text):
     return cloud_upload_bytes(destination_filename, text.encode('utf-8'), 'text/plain')
 
 
-# download from file in google cloud
+# download from file in Google or AWS cloud
 def cloud_download_bytes(source_filename):
     if local_download:
         return open('download/' + source_filename, 'rb').read()
-    Log.Write('cloud download from %s/%s' % (GAE_BUCKET, source_filename))
+
+    Log.Write('cloud download from %s/%s' % (BUCKET, source_filename))
+
+    if USE_AWS:
+        storage_client = boto3.client('s3')
+        bytes = io.BytesIO()
+        storage_client.download_fileobj (BUCKET, source_filename, bytes)
+        return bytes.getvalue()
+
     storage_client = storage.Client()
-    bucket = storage_client.bucket(GAE_BUCKET)
+    bucket = storage_client.bucket(BUCKET)
     blob = bucket.blob(source_filename)
     if not blob.exists(): return None
     bytes = blob.download_as_bytes()

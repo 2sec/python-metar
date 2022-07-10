@@ -194,7 +194,6 @@ class Cache(object):
                 modified, airports = read_csv_if_newer('airports.csv', None, ['ident', 'name', 'elevation_ft'], csv.QUOTE_MINIMAL)
                 modified, stations = read_csv_if_newer('stations.csv', None, ['icao', 'station_name', 'elev'], csv.QUOTE_MINIMAL)
 
-                new_stations = []
                 airports_set = { airport['ident'] for airport in airports }
 
                 for station in stations:
@@ -202,10 +201,7 @@ class Cache(object):
                     if ident == '': continue
 
                     if ident not in airports_set:
-                        new_stations.append(station)
-
-                for station in new_stations:
-                    airports.append({'ident': station['icao'], 'name': station['station_name'], 'elevation_ft': station['elev']})
+                        airports.append({'ident': station['icao'], 'name': station['station_name'], 'elevation_ft': station['elev']})
 
                 airports.sort(key=lambda item: item['ident'] )
 
@@ -425,7 +421,7 @@ class Cache(object):
 
 cache = Cache()
 
-if utils.is_production or __name__ == "__main__":
+if True or utils.is_production or __name__ == "__main__":
     #check if files need to be downloaded at startup
     cache.download()
 
