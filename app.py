@@ -120,7 +120,7 @@ def suggest(name):
 #called by GAE every min
 @app.route('/tasks/download')
 def download():
-    if flask.request.headers.get('X-Appengine-Cron', None) != 'true' and utils.is_production:
+    if not(flask.request.headers.get('X-Appengine-Cron', None) == 'true' or flask.request.remote_addr == '127.0.0.1'):
         return 'wot'
     dataset.cache.download()
     return 'duh'

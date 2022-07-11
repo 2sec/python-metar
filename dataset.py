@@ -422,9 +422,10 @@ class Cache(object):
 
 cache = Cache()
 
-if utils.is_production or __name__ == "__main__":
-    #check if files need to be downloaded at startup
+def download(firstTime=False):
     cache.download()
+    if not firstTime:
+        time.sleep(60)
 
 #update in memory datasets every 30s in the background
 def update(firstTime=False):
@@ -442,10 +443,20 @@ def delayed_start():
     utils.StartThread(update, 'update', restartOnException=True)
 
 
+def delayed_start2():
+    time.sleep(60)
+    utils.StartThread(download, 'download', restartOnException=True)
+
+
+#check if files need to be downloaded at startup
+if utils.is_production or __name__ == "__main__":
+    download(True)
+
 #initialize dataset
 #make sure update() runs once immediately, then run it every 30s after that
 update(True)
 utils.StartThread(delayed_start, 'delayed_start', restart=False)
 
-
-
+# AWS temporary
+if utils.is_production and utils.USE_AWS:
+    utils.StartThread(delayed_start2, 'delayed_start2', restart=False)

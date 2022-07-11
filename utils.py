@@ -247,8 +247,7 @@ def Exit(code = -1):
      os._exit(code)
 
 
-
-def StartThread(target, name = None, restart = True, restartOnException = False, exitOnException = True, *args):
+def StartThread(target, name = None, restart = True, sleepBefore = 0, restartOnException = False, exitOnException = True, *args):
 
     def thread(*args):
         while True:
@@ -268,6 +267,8 @@ def StartThread(target, name = None, restart = True, restartOnException = False,
             Exit()
 
     if name is None: name = target.__name__
+
+
             
     t = threading.Thread(target=thread, name=name, args=args)
     t.daemon = True
