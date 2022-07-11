@@ -247,7 +247,7 @@ def Exit(code = -1):
      os._exit(code)
 
 
-def StartThread(target, name = None, restart = True, sleepBefore = 0, restartOnException = False, exitOnException = True, *args):
+def StartThread(target, name = None, startDelay = 0, afterDelay = 0,  runImmediately = False, restart = True, restartOnException = False, exitOnException = True, *args):
 
     def thread(*args):
         while True:
@@ -256,6 +256,8 @@ def StartThread(target, name = None, restart = True, sleepBefore = 0, restartOnE
                 target(*args)
                 Log.Write('end')
                 if not restart: return
+                if afterDelay:
+                    time.sleep(afterDelay)
             except:
                 Log.Log_Exception()
                 if not restartOnException: break
@@ -266,11 +268,22 @@ def StartThread(target, name = None, restart = True, sleepBefore = 0, restartOnE
         if exitOnException:
             Exit()
 
+
+    def startWithDelay():
+        time.sleep(startDelay)
+        thread(*args)
+
+
     if name is None: name = target.__name__
 
+    if runImmediately:
+        target(*args)
+
+    fn = thread
+    if startDelay: fn = startWithDelay
 
             
-    t = threading.Thread(target=thread, name=name, args=args)
+    t = threading.Thread(target=fn, name=name, args=args)
     t.daemon = True
     t.start()       
     return t

@@ -183,6 +183,8 @@ class Cache(object):
     # download all files from the source, if they have changed
     def download(self):
 
+        Log.Write('downloading')
+
         # no need to download those files more than once a day
         now = datetime.utcnow()
         if(self.last_download is None or (now - self.last_download).days >= 1):
@@ -225,6 +227,9 @@ class Cache(object):
 
         download_aviationweather_csv('metars.cache.csv')
         download_aviationweather_csv('tafs.cache.csv')
+
+        Log.Write('done')
+
 
 
     # update in memory structures only if they have changed
@@ -422,41 +427,24 @@ class Cache(object):
 
 cache = Cache()
 
-def download(firstTime=False):
+def download():
+    global cache
     cache.download()
-    if not firstTime:
-        time.sleep(60)
 
 #update in memory datasets every 30s in the background
-def update(firstTime=False):
+def update():
     global cache
-
     new_cache = Cache(cache)
     if new_cache.update():
         cache = new_cache
 
-    if not firstTime:
-        time.sleep(30)
+#files must be present at startup
+download()
 
-def delayed_start():
-    time.sleep(30)
-    utils.StartThread(update, 'update', restartOnException=True)
+if utils.USE_AWS:
+    utils.StartThread(download, startDelay=60, afterDelay=60)
 
-
-def delayed_start2():
-    time.sleep(60)
-    utils.StartThread(download, 'download', restartOnException=True)
-
-
-#check if files need to be downloaded at startup
-if utils.is_production or __name__ == "__main__":
-    download(True)
 
 #initialize dataset
-#make sure update() runs once immediately, then run it every 30s after that
-update(True)
-utils.StartThread(delayed_start, 'delayed_start', restart=False)
-
-# AWS temporary
-if utils.is_production and utils.USE_AWS:
-    utils.StartThread(delayed_start2, 'delayed_start2', restart=False)
+#make sure update() runs once immediately and block until it does, then run it every 30s after that
+utils.StartThread(update, runImmediately=True, afterDelay=30)

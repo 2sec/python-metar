@@ -13,6 +13,7 @@ import utils
 
 
 app = Flask(__name__, static_folder='static', static_url_path='')
+
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
 #this allows the zip function to the be callable in the templates
@@ -132,4 +133,6 @@ def warmup():
 
 if __name__ == "__main__":
     app.run(debug=True)
+    # note: debug=True restart the whole app but does not kill existing threads apparently!
+
 
