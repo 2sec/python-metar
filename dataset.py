@@ -282,7 +282,7 @@ class Cache(object):
 
                 words = set()
                 for word in name:
-                    for i in range(2, len(word)):
+                    for i in range(2, len(word) + 1):
                         words.add(word[0:i])
 
                 for word in words:
