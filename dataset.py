@@ -271,21 +271,21 @@ class Cache(object):
                 ident = airport['ident']
                 airports_ident[ident] = airport
 
-                indexes = airports_index.get(ident, None)
-                if indexes:
-                    indexes.append(index)
-                else:
-                    airports_index[ident] = [ index ]
-               
-
                 #clean name
-
                 name = utils.normalize_toupper(airport['name'])
                 name =  [ ' ' if not c.isalnum() else c for c in name]
                 name = ''.join(name)
                 name = name.split(' ')
 
+                #add ident
+                name.append(ident)
+
+                words = set()
                 for word in name:
+                    for i in range(2, len(word)):
+                        words.add(word[0:i])
+
+                for word in words:
                     indexes = airports_index.get(word, None)
                     if indexes:
                         indexes.append(index)

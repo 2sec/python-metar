@@ -100,7 +100,6 @@ def move_airport(airport):
 
 
 #return airports matching given word
-#TODO: also search beginning of words
 @app.route('/suggest/<name>')
 def suggest(name):
     print(name)
