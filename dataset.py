@@ -58,7 +58,12 @@ def read_csv_if_newer(filename,  output_list, fields, quoting):
             row = { key: row[key] for key in fields}
             output_list.append(row)
 
-        output_list.sort(key=lambda item: item[fields[0]] )
+
+        sort_key = fields[0]
+        for item in output_list:
+            item[sort_key] = item[sort_key].upper()
+
+        output_list.sort(key=lambda item: item[sort_key] )
 
         modified = True
 
@@ -167,8 +172,8 @@ class Cache(object):
         self.runways = []
         self.metars = []
         self.tafs = []
-        self.airports_dic = {}
-        self.airport_idents = []
+        self.airports_ident = {}
+        self.airports_index = {}
         self.last_download = None
 
         if cache:
@@ -176,8 +181,8 @@ class Cache(object):
             self.runways = cache.runways
             self.metars = cache.metars
             self.tafs = cache.tafs
-            self.airports_dic = cache.airports_dic
-            self.airport_idents = cache.airport_idents
+            self.airports_ident = cache.airports_ident
+            self.airports_index = cache.airports_index
             self.last_download = cache.last_download
 
     # download all files from the source, if they have changed
@@ -231,6 +236,12 @@ class Cache(object):
         Log.Write('done')
 
 
+    def find_airports(self, word):
+        word = utils.normalize_toupper(word)
+        indexes = self.airports_index.get(word, [])
+        airports = [self.airports[index] for index in indexes]
+        return airports
+
 
     # update in memory structures only if they have changed
     def update(self):
@@ -244,6 +255,58 @@ class Cache(object):
 
         modified, self.runways = read_csv_if_newer('runways.csv', self.runways, ['airport_ident', 'length_ft', 'surface', 'le_ident', 'he_ident', 'closed', 'le_heading_degT'], csv.QUOTE_MINIMAL)
         any_modified |= modified
+
+
+        if any_modified:
+            # rebuild indexes
+            airports_index = {}
+            airports_ident = {}
+
+            runways = self.runways
+            runways_iter = iter(runways)
+            runway = next(runways_iter, None)
+
+
+            for index, airport in enumerate(self.airports):
+                ident = airport['ident']
+                airports_ident[ident] = airport
+
+                indexes = airports_index.get(ident, None)
+                if indexes:
+                    indexes.append(index)
+                else:
+                    airports_index[ident] = [ index ]
+               
+
+                #clean name
+
+                name = utils.normalize_toupper(airport['name'])
+                name =  [ ' ' if not c.isalnum() else c for c in name]
+                name = ''.join(name)
+                name = name.split(' ')
+
+                for word in name:
+                    indexes = airports_index.get(word, None)
+                    if indexes:
+                        indexes.append(index)
+                    else:
+                        airports_index[word] = [ index ]
+
+                # find matching runways, if any
+                airport_runways =  []
+
+                while runway and ident > runway['airport_ident']: runway = next(runways_iter, None)
+                while runway and ident == runway['airport_ident']:
+                    if runway['closed'] == '0':
+                        airport_runways.append(runway)
+                    runway = next(runways_iter, None)
+
+                airport['runways'] = airport_runways
+
+            
+            self.airports_index = airports_index
+            self.airports_ident = airports_ident
+
 
         modified, self.metars = read_csv_if_newer('metars.cache.csv', self.metars, ['station_id', 'raw_text', 'flight_category', 'wind_dir_degrees', 'wind_speed_kt', 'wind_gust_kt'], csv.QUOTE_NONE)
         any_modified |= modified
@@ -259,7 +322,6 @@ class Cache(object):
 
         tafs = self.tafs
         metars = self.metars
-        runways = self.runways
 
         now = datetime.utcnow()
 
@@ -291,27 +353,18 @@ class Cache(object):
             raw_text = taf['raw_text']
             if raw_text.startswith('TAF '): tafs[i]['raw_text'] = raw_text[4:]
         
-        idents = []
 
-        # advance in all sorted lists at the same time, and find matching metars, tafs and runways
+        # advance in all sorted lists at the same time, and find matching metars and tafs
         metars_iter = iter(metars)
         metar = next(metars_iter, None)
 
         tafs_iter = iter(tafs)
         taf = next(tafs_iter, None)
 
-        runways_iter = iter(runways)
-        runway = next(runways_iter, None)
-
-
-        airports_dic = {}
-
         for airport in self.airports:
-            ident = airport['ident'].upper()
-            idents.append(ident)
-            airports_dic[ident] = airport
+            ident = airport['ident']
 
-            # find matching metar, taf or runways, if any
+            # find matching metar and taf if any
             airport['metar'] = None
             airport['taf'] = None
 
@@ -320,20 +373,6 @@ class Cache(object):
 
             while taf and ident > taf['station_id']: taf = next(tafs_iter, None)
             if taf and ident == taf['station_id']: airport['taf'] = taf
-
-            airport_runways =  []
-
-            while runway and ident > runway['airport_ident']: runway = next(runways_iter)
-            while runway and ident == runway['airport_ident']:
-                if runway['closed'] == '0':
-                    airport_runways.append(runway)
-                runway = next(runways_iter)
-
-            airport['runways'] = airport_runways
-        
-
-        self.airport_idents = idents
-        self.airports_dic = airports_dic
 
         return True
 

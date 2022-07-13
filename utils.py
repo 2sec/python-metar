@@ -9,6 +9,7 @@ import atexit
 import re
 import requests
 
+import unicodedata 
 
 import Log
 from google.cloud import storage
@@ -219,6 +220,12 @@ def angle_diff(angle1, angle2):
     return (angle + 180) % 360 - 180
 
 
+def normalize_toupper(str):
+    str = str.upper()
+    str = [c for c in unicodedata.normalize('NFKD', str) if not unicodedata.combining(c)]
+    str = ''.join(str)
+    return str
+
 
 
 class StopWatch(object):
@@ -345,6 +352,14 @@ def SendMailAsync():
 StartThread(SendMailAsync, 'sendmail')
 
 
+'''
+
+http://169.254.169.254/latest/meta-data/instance-id
+http://169.254.169.254/latest/meta-data/placement/region
 
 
+-> i-05e9cb901f62fe772, us-east-1
+
+
+'''
 

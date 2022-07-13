@@ -54,7 +54,7 @@ def airports(template = 'airports.html'):
     airport_winds = []
     airports = []
     for airport in selected_airports:
-        airport = dataset.cache.airports_dic.get(airport, None)
+        airport = dataset.cache.airports_ident.get(airport, None)
         if airport:
             airport_winds.append(dataset.cache.calc_wind(airport))
             airports.append(airport)
@@ -99,22 +99,16 @@ def move_airport(airport):
     return redirect
 
 
-#return airports matching given text
-#currently only the ICAO code is searched
-#TODO: also search any word in the airport names
+#return airports matching given word
+#TODO: also search beginning of words
 @app.route('/suggest/<name>')
 def suggest(name):
-    name = name.upper();
     print(name)
-    name_len = len(name)
     matches = []
-    for ident in dataset.cache.airport_idents:
-        if ident < name: continue
-        if ident[0:name_len] == name: matches.append({'ident': ident, 'name': dataset.cache.airports_dic[ident]['name']})
-        else: break
-    return {
-        "results": matches,
-    }
+    airports = dataset.cache.find_airports(name)
+    for airport in airports:
+        matches.append({'ident': airport['ident'], 'name': airport['name']})
+    return { "results": matches }
 
 
 #download datasets if they have changed
