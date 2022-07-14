@@ -220,10 +220,13 @@ def angle_diff(angle1, angle2):
     return (angle + 180) % 360 - 180
 
 
+#return an array of normalized words
 def normalize_toupper(str):
     str = str.upper()
     str = [c for c in unicodedata.normalize('NFKD', str) if not unicodedata.combining(c)]
+    str = [ ' ' if not c.isalnum() else c for c in str]
     str = ''.join(str)
+    str = str.split(' ')
     return str
 
 

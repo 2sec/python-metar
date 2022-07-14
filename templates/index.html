@@ -124,7 +124,6 @@
 
 
     <script>
-        // TODO: process accents or special characters correctly
         let autoCompleteJS = new autoComplete(
         {
             placeHolder: "Search Any Airport / Station",
@@ -132,7 +131,7 @@
             {
                 src: async function (query)
                 {
-                    let source = await fetch('/suggest/' + escape(query));
+                    let source = await fetch('/suggest/' + encodeURI(query));
                     let response = await source.json();
                     let list = []
                     let results = response.results;
@@ -144,6 +143,9 @@
                     return list;
                 }
             },
+
+            diacritics: true,
+            searchEngine: 'loose',
             resultsList:
             {
                 maxResults: 100

@@ -33,8 +33,6 @@ def read_if_changed(filename, new_last_modified):
 # if the file has not changed, return the existing list
 # if an existing list is not given, read the file unconditionnally
 def read_csv_if_newer(filename,  output_list, fields, quoting):
-
-
     new_last_modified = None
     if output_list: new_last_modified = utils.tmp_read(filename)
 
@@ -236,9 +234,19 @@ class Cache(object):
         Log.Write('done')
 
 
-    def find_airports(self, word):
-        word = utils.normalize_toupper(word)
-        indexes = self.airports_index.get(word, [])
+    def find_airports(self, text):
+        indexes = None
+        first_run  = True
+        for word in utils.normalize_toupper(text):
+            new_indexes = set(self.airports_index.get(word, []))
+            if first_run: 
+                indexes = new_indexes
+            else: 
+                indexes &= new_indexes
+            first_run = False
+
+        indexes = [index for index in indexes]
+        indexes.sort()
         airports = [self.airports[index] for index in indexes]
         return airports
 
@@ -273,10 +281,6 @@ class Cache(object):
 
                 #clean name
                 name = utils.normalize_toupper(airport['name'])
-                name =  [ ' ' if not c.isalnum() else c for c in name]
-                name = ''.join(name)
-                name = name.split(' ')
-
                 #add ident
                 name.append(ident)
 
