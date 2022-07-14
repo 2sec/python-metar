@@ -235,9 +235,10 @@ class Cache(object):
 
 
     def find_airports(self, text):
-        indexes = None
+        indexes = []
         first_run  = True
         for word in utils.normalize_toupper(text):
+            if len(word) < 3: continue
             new_indexes = set(self.airports_index.get(word, []))
             if first_run: 
                 indexes = new_indexes
