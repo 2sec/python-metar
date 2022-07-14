@@ -1,101 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Home</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-
-<!-- from https://fonts.google.com/specimen/Montserrat
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap');
-</style>
- -->
-<style>
-/* latin */
-@font-face {
-  font-family: 'Montserrat';
-  font-style: normal;
-  font-weight: 300;
-  font-display: block;
-  src: url('{{ static_path }}JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCs16Hw5aXo.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-</style>
-
-<!-- from https://tarekraafat.github.io/autoComplete.js
-<script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/css/autoComplete.01.min.css">
--->
-
-<script src="{{ static_path }}autocomplete.js"></script>
-<link rel="stylesheet" href="{{ static_path }}autocomplete.css">
-
-<style>
-    body
-    {
-        margin: 10pt;
-    }
-    body, input
-    { 
-        font-family: 'Montserrat', sans-serif; 
-        font-size: 12pt;
-    }
+    <meta charset="utf-8">
+    <title>Home</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     
-    a:link, a:visited
-    {
-        text-decoration: none;
-        color: black;
-        font-weight: bold;
-    }
+    <!-- from https://fonts.google.com/specimen/Montserrat
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap');
+        </style>
+    -->
+    <style>
+        /* latin */
+        @font-face {
+            font-family: 'Montserrat';
+            font-style: normal;
+            font-weight: 300;
+            font-display: block;
+            src: url('{{ static_path }}JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCs16Hw5aXo.woff2') format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+    </style>
+    
+    <!-- from https://tarekraafat.github.io/autoComplete.js
+        <script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/css/autoComplete.01.min.css">
+    -->
+    
+    <script src="{{ static_path }}autocomplete.js"></script>
+    <link rel="stylesheet" href="{{ static_path }}autocomplete.css">
+    
+    <style>
+        body
+        {
+            margin: 10pt;
+        }
+        body, input
+        { 
+            font-family: 'Montserrat', sans-serif; 
+            font-size: 12pt;
+        }
+        
+        a:link, a:visited
+        {
+            text-decoration: none;
+            color: black;
+            font-weight: bold;
+        }
+        
+        .airport
+        {
+            border-top: 1px dotted;
+            margin-top: 10pt;
+        }
+        
+        .airport_name
+        {
+            padding-top: 10pt;
+            padding-bottom: 10pt;
+        }
+        
+        .metar-valid-False { color: red; }
+        
+        .VFR { color: green; }
+        .MVFR { color: blue; }
+        .IFR { color: red; }
+        .LIFR { color: magenta; }
+        
+        .wind { display: inline-block; font-family: sans-serif; }
+        .arrow {  width: 10.96px; height: 9.48px; }
+        
+        .runway_red { color: red; }
+        .runway_green { color: green; }
 
-    .airport
-    {
-        border-top: 1px dotted;
-        margin-top: 10pt;
-    }
-
-    .airport_name
-    {
-        padding-top: 10pt;
-        padding-bottom: 10pt;
-    }
-
-    .metar-valid-False { color: red; }
-
-    .VFR { color: green; }
-    .MVFR { color: blue; }
-    .IFR { color: red; }
-    .LIFR { color: magenta; }
-
-    .wind { display: inline-block; font-family: 'Courier New'; }
-
-    .runway_red { color: red; }
-    .runway_green { color: green; }
-
-    .N { transform: rotate(0deg); }
-    .NNE { transform: rotate(22.5deg); }
-    .NE { transform: rotate(45deg); }
-    .ENE { transform: rotate(67.5deg); }
-    .E { transform: rotate(90deg); }
-    .ESE { transform: rotate(112.5deg); }
-    .SE { transform: rotate(135deg); }
-    .SSE { transform: rotate(157.5deg); }
-    .S { transform: rotate(180deg); }
-    .SSW { transform: rotate(202.5deg); }
-    .SW { transform: rotate(-135deg); }
-    .WSW { transform: rotate(-112.5deg); }
-    .W { transform: rotate(-90deg); }
-    .WNW { transform: rotate(-67.5deg); }
-    .NW { transform: rotate(-45deg); }
-    .NNW { transform: rotate(-22.5deg); }
-</style>
-<script>
-    function toggle_display(id)
-    {
-        let style = document.getElementById(id).style;
-        if (style.display == 'none') style.display = 'block'; else style.display = 'none';
-    }
-</script>
+        
+        .N { transform: rotate(0deg); }
+        .NNE { transform: rotate(22.5deg); }
+        .NE { transform: rotate(45deg); }
+        .ENE { transform: rotate(67.5deg); }
+        .E { transform: rotate(90deg); }
+        .ESE { transform: rotate(112.5deg); }
+        .SE { transform: rotate(135deg); }
+        .SSE { transform: rotate(157.5deg); }
+        .S { transform: rotate(180deg); }
+        .SSW { transform: rotate(202.5deg); }
+        .SW { transform: rotate(-135deg); }
+        .WSW { transform: rotate(-112.5deg); }
+        .W { transform: rotate(-90deg); }
+        .WNW { transform: rotate(-67.5deg); }
+        .NW { transform: rotate(-45deg); }
+        .NNW { transform: rotate(-22.5deg); }
+    </style>
+    <script>
+        function toggle_display(id)
+        {
+            let style = document.getElementById(id).style;
+            if (style.display == 'none') style.display = 'block'; else style.display = 'none';
+        }
+    </script>
 </head>
 
 
@@ -106,87 +108,102 @@
             <input id="reload" type="checkbox"/> <label for="reload">Automatic Update</label>
         </div>
     </form>
+    
+    <!-- arrow for wind origin
+    reuse like this: <svg class="arrow ENE"><use xlink:href="#arrow" /></svg>
+    generated with  https://danmarshall.github.io/google-font-to-svg-path/  and the Overpass Mono font
+    -->
+    <svg style="display:none" width="10.96" height="9.48" viewBox="0 0 10.96 9.48" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <g id="arrow" stroke-linecap="round" fill-rule="evenodd" stroke="#000" stroke-width="0.01mm"
+                fill="#000" style="stroke:#000;stroke-width:0.01mm;fill:#000">
+                <path d="M 10.96 0 L 5.48 9.48 L 0 0 L 5.48 2.36 L 10.96 0 Z" vector-effect="non-scaling-stroke" />
+            </g>
+        </defs>
+    </svg>
+
 
     <script>
-    // TODO: process accents or special characters correctly
-    let autoCompleteJS = new autoComplete(
-    {
-        placeHolder: "Search Any Airport / Station",
-        data: 
+        // TODO: process accents or special characters correctly
+        let autoCompleteJS = new autoComplete(
         {
-            src: async function (query)
+            placeHolder: "Search Any Airport / Station",
+            data: 
             {
-                let source = await fetch('/suggest/' + escape(query));
-                let response = await source.json();
-                let list = []
-                let results = response.results;
-                for (let i = 0, n = results.length; i < n; i++) 
+                src: async function (query)
                 {
-                    result = results[i]
-                    list.push(result.ident + ' ' + result.name);
+                    let source = await fetch('/suggest/' + escape(query));
+                    let response = await source.json();
+                    let list = []
+                    let results = response.results;
+                    for (let i = 0, n = results.length; i < n; i++) 
+                    {
+                        result = results[i]
+                        list.push(result.ident + ' ' + result.name);
+                    }
+                    return list;
                 }
-                return list;
-            }
-        },
-        resultsList:
-        {
-            maxResults: 100
-        },
-        events: 
-        {
-            input: 
+            },
+            resultsList:
             {
-                selection: function (event) 
+                maxResults: 100
+            },
+            events: 
+            {
+                input: 
                 {
-                    const selection = event.detail.selection.value;
-                    autoCompleteJS.input.value = selection;
-                    const code = selection.split(' ')[0]
-                    document.body.style.cursor = 'wait'
-                    window.location.replace('/add_airport/' + code);
+                    selection: function (event) 
+                    {
+                        const selection = event.detail.selection.value;
+                        autoCompleteJS.input.value = selection;
+                        const code = selection.split(' ')[0]
+                        document.body.style.cursor = 'wait'
+                        window.location.replace('/add_airport/' + code);
+                    }
                 }
             }
+        });
+        
+        let params = new URLSearchParams(window.location.search);
+        let reload = document.getElementById('reload');
+        if (params.get('reload') == 1) reload.checked = true
+        
+        reload.addEventListener('change', (e) => { window.location.href = '/' + (e.currentTarget.checked? '?reload=1': ''); });
+        
+        
+        if(reload.checked)
+        {
+            let time = () => new Date().getTime();
+            let idle_time = time();
+            document.body.addEventListener('keypress', () => idle_time = time() );
+            
+            function test_idle() 
+            {
+                if(time() - idle_time >= 10 * 1000) 
+                {
+                    // fetch timeout
+                    let controller = new AbortController();
+                    let timeout = setTimeout(() => { controller.abort(); console.log('aborted'); } , 2 * 1000);
+                    
+                    // reload aiports using fetch then replace content only if it succeeds, otherwise try later (for connection issues while flying)
+                    fetch('/airports', { signal: controller.signal } ).then((response) => response.text()).then(function (html) 
+                    {
+                        html = new DOMParser().parseFromString(html, 'text/html')
+                        let old_airports = document.getElementById('airports')
+                        let new_airports = html.getElementById('airports')
+                        if (new_airports)
+                            old_airports.replaceWith(new_airports)
+                        clearTimeout(timeout)
+                        console.log('reloaded')
+                    }).catch((err) => console.log(err));
+                }
+                setTimeout(test_idle, 5 * 1000);
+            } 
+            
+            test_idle();
         }
-    });
-
-    let params = new URLSearchParams(window.location.search);
-    let reload = document.getElementById('reload');
-    if (params.get('reload') == 1) reload.checked = true
-
-    reload.addEventListener('change', (e) => { window.location.href = '/' + (e.currentTarget.checked? '?reload=1': ''); });
-
-    
-    if(reload.checked)
-    {
-        let time = () => new Date().getTime();
-        let idle_time = time();
-        document.body.addEventListener('keypress', () => idle_time = time() );
-
-        function test_idle() 
-        {
-            if(time() - idle_time >= 10 * 1000) 
-            {
-                // fetch timeout
-                let controller = new AbortController();
-                let timeout = setTimeout(() => { controller.abort(); console.log('aborted'); } , 2 * 1000);
-
-                // reload aiports using fetch then replace content only if it succeeds, otherwise try later (for connection issues while flying)
-                fetch('/airports', { signal: controller.signal } ).then((response) => response.text()).then(function (html) 
-                {
-                    html = new DOMParser().parseFromString(html, 'text/html')
-                    let old_airports = document.getElementById('airports')
-                    let new_airports = html.getElementById('airports')
-                    old_airports.replaceWith(new_airports)
-                    clearTimeout(timeout)
-                    console.log('reloaded')
-                }).catch((err) => console.log(err));
-            }
-            setTimeout(test_idle, 5 * 1000);
-        } 
-
-        test_idle();
-    }
     </script>
-
+    
     {% include "airports_div.html" %}
     
     <hr/>
@@ -195,6 +212,6 @@
         <br/>Do not rely on this site for flight planning or anything.
         <br/>Only strictly necessary cookies are used on this site.
     </div>
-
+    
 </body>
 </html>
