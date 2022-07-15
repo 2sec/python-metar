@@ -191,6 +191,8 @@ class Cache(object):
         # no need to download those files more than once a day
         now = datetime.utcnow()
         if(self.last_download is None or (now - self.last_download).days >= 1):
+            self.last_download = now
+
             modified1 = download_metar_stations('stations.csv')
             modified2 = download_ourairports_csv('airports.csv')
             download_ourairports_csv('runways.csv')
@@ -224,7 +226,6 @@ class Cache(object):
                 #signal the file has changed
                 utils.tmp_write(filename, str(now))
 
-                self.last_download = now
 
 
 
@@ -401,9 +402,8 @@ class Cache(object):
                 metar = None
 
         if metar:
-            wind_origin = int(wind_dir_degrees / 22.5 + 0.5)
-            if wind_origin > 15: wind_origin = 15
-            wind_origins = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+            wind_origin = int((wind_dir_degrees%360) / 22.5 + 0.5)
+            wind_origins = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW', 'N']
             wind['wind_origin'] = wind_origins[wind_origin]
 
 

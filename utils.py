@@ -227,6 +227,7 @@ def normalize_toupper(str):
     str = [ ' ' if not c.isalnum() else c for c in str]
     str = ''.join(str)
     str = str.split(' ')
+    str = [s for s in str if s != '']
     return str
 
 
