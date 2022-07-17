@@ -14,7 +14,7 @@
                     <b class="{{ metar['flight_category'] }}"> {{ metar['flight_category'] }}</b>
                     <span> Wind {{ airport_wind['wind_origin'] }}</span>
                     <!-- ⮟ -->
-                    <svg class="arrow wind {{ airport_wind['wind_origin'] }}"><use xlink:href="#arrow" /></svg>
+                    <svg class="arrow" style="transform: rotate({{ metar['wind_dir_degrees']}}deg);"><use xlink:href="#arrow" /></svg>
                     <b> {{ metar['wind_dir_degrees'] }}° {{ metar['wind_speed_kt'] }} kt</b>
                     {% if metar['wind_gust_kt'] %}
                         <b> gusting to {{ metar['wind_gust_kt'] }} kt</b>

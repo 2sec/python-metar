@@ -95,8 +95,6 @@ def download_aviationweather_csv(filename):
 
         content = content[n+1:]
 
-        Log.Write(debug_header)
-
         #upload the new file
         utils.cloud_upload_text(filename, content)
 
@@ -131,6 +129,7 @@ def download_metar_stations(filename):
     url = 'http://www.weathergraphics.com/identifiers/master-location-identifier-database-202207_standard.csv'
 
     # TODO: test if the url has changed
+    # or use this source https://www.aviationweather.gov/docs/metar/stations.txt 
 
     new_last_modified = utils.tmp_read(filename)
 
@@ -150,8 +149,6 @@ def download_metar_stations(filename):
         debug_header = content[0:n]
 
         content = content[n+1:]
-
-        Log.Write(debug_header)
 
         #upload the new file
         utils.cloud_upload_text(filename, content)
@@ -286,6 +283,7 @@ class Cache(object):
                 #add ident
                 name.append(ident)
 
+                #add all those words to the search index
                 words = set()
                 for word in name:
                     for i in range(3, len(word) + 1):
@@ -297,6 +295,7 @@ class Cache(object):
                         indexes.append(index)
                     else:
                         airports_index[word] = [ index ]
+
 
                 # find matching runways, if any
                 airport_runways =  []
