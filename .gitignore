@@ -1,7 +1,7 @@
 __*
 download/*.csv
 .git
-
+.vscode
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*

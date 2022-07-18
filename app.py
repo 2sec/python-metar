@@ -110,20 +110,6 @@ def suggest(name):
     return { "results": matches }
 
 
-#download datasets if they have changed
-#called by GAE every min
-@app.route('/tasks/download')
-def download():
-    if not(flask.request.headers.get('X-Appengine-Cron', None) == 'true' or flask.request.remote_addr == '127.0.0.1'):
-        return 'wot'
-    dataset.cache.download()
-    return 'duh'
-
-
-@app.route('/_ah/warmup')
-def warmup():
-    return 'duh'
-
 if __name__ == "__main__":
     app.run(debug=True)
     # note: debug=True restart the whole app but does not kill existing threads apparently!

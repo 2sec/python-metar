@@ -183,7 +183,7 @@ class Cache(object):
     # download all files from the source, if they have changed
     def download(self):
 
-        Log.Write('downloading')
+        Log.Write('testing')
 
         # no need to download those files more than once a day
         now = datetime.utcnow()
@@ -196,6 +196,9 @@ class Cache(object):
 
             #merge airports and stations
             if modified1 or modified2:
+
+                Log.Write('merging')
+
                 modified, airports = read_csv_if_newer('airports.csv', None, ['ident', 'name', 'elevation_ft'], csv.QUOTE_MINIMAL)
                 modified, stations = read_csv_if_newer('stations.csv', None, ['icao', 'station_name', 'elev'], csv.QUOTE_MINIMAL)
 
@@ -265,6 +268,9 @@ class Cache(object):
 
 
         if any_modified:
+
+            Log.Write('rebuilding indexes')
+
             # rebuild indexes
             airports_index = {}
             airports_ident = {}
@@ -379,6 +385,9 @@ class Cache(object):
             while taf and ident > taf['station_id']: taf = next(tafs_iter, None)
             if taf and ident == taf['station_id']: airport['taf'] = taf
 
+
+        Log.Write('done')
+
         return True
 
 
@@ -482,12 +491,9 @@ def update():
         cache = new_cache
 
 #files must be present at startup
-download()
-
-if utils.USE_AWS:
-    utils.StartThread(download, startDelay=60, afterDelay=60)
+utils.StartThread(download, runImmediately=True, startDelay=60, afterDelay=60, restartOnException=True)
 
 
 #initialize dataset
 #make sure update() runs once immediately and block until it does, then run it every 30s after that
-utils.StartThread(update, runImmediately=True, afterDelay=30)
+utils.StartThread(update, runImmediately=True, startDelay=30, afterDelay=30, restartOnException=True)
