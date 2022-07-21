@@ -41,9 +41,9 @@
                         <b><span class="{{ runway_wind['le_class'] }}">{{ runway['le_ident'] }}</span> | <span class="{{ runway_wind['he_class'] }}">{{ runway['he_ident'] }}</span></b>  {{ runway['surface'] }} {{ runway['length_ft'] }} ft 
                         {% set wind = runway_wind['wind'] %}
                         {% if wind %}
-                            <b> {{ runway_wind['crosswind_type'] }} {{ wind[0] }} kt | &rarr; {{ wind[1] }} kt </b>
+                            <b> {{ runway_wind['crosswind_type'] }} {{ wind[0] }} kt &rarr; {{ wind[1] }} kt </b>
                             {% if wind[2] > 0 or wind[3] > 0 %}
-                                <b> gusting to  {{ runway_wind['crosswind_type'] }} {{ wind[2] }} kt | &rarr; {{ wind[3] }} kt </b>
+                                <b> gusting to  {{ runway_wind['crosswind_type'] }} {{ wind[2] }} kt &rarr; {{ wind[3] }} kt </b>
                             {% endif %}
                             <!-- {{ runway['le_ident'] }} = {{ runway_wind['le_heading'] }}°-->
                             <!-- {{ runway_wind['crosswind_angle'] }}°-->

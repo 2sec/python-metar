@@ -185,18 +185,18 @@ class Cache(object):
 
         Log.Write('testing')
 
+        modified = False
+
         # no need to download those files more than once a day
         now = datetime.utcnow()
         if(self.last_download is None or (now - self.last_download).days >= 1):
             self.last_download = now
 
-            modified1 = download_metar_stations('stations.csv')
-            modified2 = download_ourairports_csv('airports.csv')
-            download_ourairports_csv('runways.csv')
+            modified |= download_metar_stations('stations.csv')
+            modified |= download_ourairports_csv('airports.csv')
 
             #merge airports and stations
-            if modified1 or modified2:
-
+            if modified:
                 Log.Write('merging')
 
                 modified, airports = read_csv_if_newer('airports.csv', None, ['ident', 'name', 'elevation_ft'], csv.QUOTE_MINIMAL)
@@ -227,12 +227,14 @@ class Cache(object):
                 utils.tmp_write(filename, str(now))
 
 
+            modified |= download_ourairports_csv('runways.csv')
 
 
-        download_aviationweather_csv('metars.cache.csv')
-        download_aviationweather_csv('tafs.cache.csv')
+        modified |= download_aviationweather_csv('metars.cache.csv')
+        modified |= download_aviationweather_csv('tafs.cache.csv')
 
         Log.Write('done')
+        return modified
 
 
     def find_airports(self, text):
@@ -490,10 +492,15 @@ def update():
     if new_cache.update():
         cache = new_cache
 
-#files must be present at startup
-utils.StartThread(download, runImmediately=True, startDelay=60, afterDelay=60, restartOnException=True)
 
+#files must be present at startup
+#note: download() should be run as a separate task with cron or something
+#as actually coded, it would run on all frontend servers which is silly
+utils.StartThread(download, runImmediately=True, delay=60, restartOnException=True)
 
 #initialize dataset
 #make sure update() runs once immediately and block until it does, then run it every 30s after that
-utils.StartThread(update, runImmediately=True, startDelay=30, afterDelay=30, restartOnException=True)
+utils.StartThread(update, runImmediately=True, delay=30, restartOnException=True)
+
+
+# https://github.com/awsdocs/elastic-beanstalk-samples/blob/master/configuration-files/aws-provided/instance-configuration/cron-leaderonly-linux.config
