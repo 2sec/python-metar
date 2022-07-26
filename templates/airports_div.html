@@ -1,4 +1,4 @@
-<div id="airports">
+<div id="airports"  data-airports="{{selected_airports}}">
         <div id="status">
             <b>Last Update </b>{{ now }}Z
         </div>
@@ -8,7 +8,7 @@
             {% set metar = airport['metar'] %}
             {% set taf = airport['taf'] %}
             <div class="airport_name">
-                <a href="/remove_airport/{{ ident }}" title="Remove">&Cross;</a> <a href="/move_airport/{{ ident }}" title="Move Up">&uarr;</a>
+                <a href="/?airports={{selected_airports}}&remove={{ident}}" title="Remove">&Cross;</a> <a href="/?airports={{selected_airports}}&move={{ident}}" title="Move Up">&uarr;</a>
                 <a href="#{{ ident }}" onclick="toggle_display('{{ ident }}')">{{ ident }} </a><span>{{ airport['name'] }}</span> [<span>{{ airport['elevation_ft'] }} ft</span>]
                 {% if airport_wind['wind_origin'] %}
                     <b class="{{ metar['flight_category'] }}"> {{ metar['flight_category'] }}</b>

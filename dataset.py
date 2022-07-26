@@ -502,5 +502,3 @@ utils.StartThread(download, runImmediately=True, delay=60, restartOnException=Tr
 #make sure update() runs once immediately and block until it does, then run it every 30s after that
 utils.StartThread(update, runImmediately=True, delay=30, restartOnException=True)
 
-
-# https://github.com/awsdocs/elastic-beanstalk-samples/blob/master/configuration-files/aws-provided/instance-configuration/cron-leaderonly-linux.config
