@@ -20,6 +20,7 @@ self.addEventListener('install', e =>
     console.log('[Service Worker] Install');
 });
 
+
 self.addEventListener('activate', e => 
 {     
     service_worker_url = new URL(location)
