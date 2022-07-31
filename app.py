@@ -20,7 +20,7 @@ app.jinja_env.lstrip_blocks = True
 app.jinja_env.globals.update(zip=zip)
 
 random_value = random.getrandbits(64)
-static_version = '20220726-11'
+static_version = '20220731-04'
 static_path = '/cache/' + static_version + '/'
 
 # cache versioning for static files
