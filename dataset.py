@@ -7,6 +7,7 @@ import math
 import Log
 import utils
 import io
+import gzip
 
 from datetime import datetime
 
@@ -72,15 +73,17 @@ def read_csv_if_newer(filename,  output_list, fields, quoting):
 
 # download the given file from the source and updates it on our cloud
 def download_aviationweather_csv(filename):
-    base_url = 'https://www.aviationweather.gov/adds/dataserver_current/current/'
-
+    # new 10/2023 (gz)
+    base_url = 'https://aviationweather.gov/data/cache/'
+    
     url = base_url + filename
 
     new_last_modified = utils.tmp_read(filename)
 
-    modified, response, new_last_modified = utils.http_download_if_newer(url, new_last_modified)
+    modified, response, new_last_modified = utils.http_download_if_newer(url + '.gz', new_last_modified)
     if modified:
-        content = response.content.decode('utf-8')
+        content = gzip.decompress(response.content)
+        content = content.decode('utf-8')
         #default debug header:
         #No errors
         #No warnings
@@ -126,7 +129,9 @@ def download_ourairports_csv(filename):
 
 
 def download_metar_stations(filename):
-    url = 'http://www.weathergraphics.com/identifiers/master-location-identifier-database-202207_standard.csv'
+    # new 10/2023
+    url = 'http://www.weathergraphics.com/identifiers/master-location-identifier-database-202307_standard.csv'
+    
 
     # TODO: test if the url has changed
     # or use this source https://www.aviationweather.gov/docs/metar/stations.txt 
@@ -496,9 +501,9 @@ def update():
 #files must be present at startup
 #note: download() should be run as a separate task with cron or something
 #as actually coded, it would run on all frontend servers which is silly
-utils.StartThread(download, runImmediately=True, delay=60, restartOnException=True)
+utils.StartThread(download, runImmediately=True, delay=30, restartOnException=True)
 
 #initialize dataset
 #make sure update() runs once immediately and block until it does, then run it every 30s after that
-utils.StartThread(update, runImmediately=True, delay=30, restartOnException=True)
+utils.StartThread(update, runImmediately=True, delay=15, restartOnException=True)
 
