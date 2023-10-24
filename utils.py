@@ -345,19 +345,3 @@ def SendMailAsync():
 
 StartThread(SendMailAsync, 'sendmail')
 
-
-'''
-# https://github.com/awsdocs/elastic-beanstalk-samples/blob/master/configuration-files/aws-provided/instance-configuration/cron-leaderonly-linux.config
-
-http://169.254.169.254/latest/meta-data/instance-id
-http://169.254.169.254/latest/meta-data/placement/region
-
-
--> i-05e9cb901f62fe772, us-east-1
-
-http://169.254.169.254/latest/meta-data/ami-launch-index
-https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMI-launch-index-examples.html
-
-
-'''
-
