@@ -1,0 +1,12 @@
+[Unit]
+Description=python-metar
+After=network.target
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/python-metar
+ExecStart=/home/ubuntu/python-metar/run.sh
+Restart=always
+RestartSec=5s
+[Install]
+WantedBy=multi-user.target
