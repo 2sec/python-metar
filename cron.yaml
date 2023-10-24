@@ -1,4 +1,0 @@
-# cron:
-# - description: "download"
-#   url: /tasks/download
-#   schedule: every 1 mins
