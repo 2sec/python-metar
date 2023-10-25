@@ -1,6 +1,7 @@
 #!/bin/bash
 pip install -r requirements.txt --upgrade
 
+sudo systemctl stop nginx
 
 sudo apt install nginx  --upgrade
 
@@ -18,11 +19,11 @@ sudo systemctl disable python-metar
 
 sudo cp python-metar.service /etc/systemd/system/
 
-
 sudo systemctl enable python-metar
 sudo systemctl start python-metar
 sudo systemctl status python-metar
 sudo journalctl -u python-metar
+
 
 sudo systemctl enable nginx
 sudo systemctl restart nginx

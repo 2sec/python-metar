@@ -25,34 +25,19 @@ random.seed(random_state)
 
 
 
-GAE_PROJECTID = os.getenv('GOOGLE_CLOUD_PROJECT', '')
-GAE_BUCKET = GAE_PROJECTID + '.appspot.com'
-GAE_ENV = os.getenv('GAE_ENV', '')
-
-USE_GAE = GAE_PROJECTID != ''
-BUCKET = GAE_BUCKET
-
-USE_AWS = False
 
 AWS_PROJECTID = os.getenv('AWS_PROJECT', '')
 AWS_BUCKET = os.getenv('AWS_BUCKET', '')
 AWS_ENV = os.getenv('AWS_ENV', '')
 
-if AWS_PROJECTID != '':
-    USE_AWS = True
-    USE_GAE = False
-    BUCKET = AWS_BUCKET
 
-
-Log.Write('GOOGLE_CLOUD_PROJECT = ' + GAE_PROJECTID)
-Log.Write('GAE_ENV = ' + GAE_ENV)
 Log.Write('AWS_PROJECT = ' + AWS_PROJECTID)
 Log.Write('AWS_BUCKET = ' + AWS_BUCKET)
 Log.Write('AWS_ENV = ' + AWS_ENV)
 
 
 
-is_production = GAE_ENV != '' or AWS_ENV != ''
+is_production = AWS_ENV != ''
 local_download = not is_production
 
 
@@ -63,17 +48,11 @@ def cloud_upload_bytes(destination_filename, bytes, content_type = 'application/
         open('download/' + destination_filename, 'wb').write(bytes)
         return
     
-    Log.Write('cloud upload to %s/%s' % (BUCKET, destination_filename))
+    Log.Write('cloud upload to %s/%s' % (AWS_BUCKET, destination_filename))
 
-    if USE_AWS:
-        storage_client = boto3.client('s3')
-        bytes = io.BytesIO(bytes)
-        return storage_client.upload_fileobj(bytes, BUCKET, destination_filename)
-
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(BUCKET)
-    blob = bucket.blob(destination_filename)
-    return blob.upload_from_string(bytes, content_type = content_type)
+    storage_client = boto3.client('s3')
+    bytes = io.BytesIO(bytes)
+    return storage_client.upload_fileobj(bytes, AWS_BUCKET, destination_filename)
 
 def cloud_upload_text(destination_filename, text):
     return cloud_upload_bytes(destination_filename, text.encode('utf-8'), 'text/plain')
@@ -84,20 +63,13 @@ def cloud_download_bytes(source_filename):
     if local_download:
         return open('download/' + source_filename, 'rb').read()
 
-    Log.Write('cloud download from %s/%s' % (BUCKET, source_filename))
+    Log.Write('cloud download from %s/%s' % (AWS_BUCKET, source_filename))
 
-    if USE_AWS:
-        storage_client = boto3.client('s3')
-        bytes = io.BytesIO()
-        storage_client.download_fileobj (BUCKET, source_filename, bytes)
-        return bytes.getvalue()
+    storage_client = boto3.client('s3')
+    bytes = io.BytesIO()
+    storage_client.download_fileobj (AWS_BUCKET, source_filename, bytes)
+    return bytes.getvalue()
 
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(BUCKET)
-    blob = bucket.blob(source_filename)
-    if not blob.exists(): return None
-    bytes = blob.download_as_bytes()
-    return bytes
 
 def cloud_download_text(source_filename):
     file = cloud_download_bytes(source_filename);
