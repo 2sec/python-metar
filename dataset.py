@@ -370,7 +370,7 @@ class Cache(object):
 
             
             if not raw_text.startswith('METAR '): 
-                Log.Write("INV %s" % raw_text)
+                Log.Write('Unrecognized METAR %s' % raw_text)
                 continue
 
             raw_text = raw_text[6:]
@@ -430,6 +430,7 @@ class Cache(object):
 
         metar = airport['metar']
 
+
         if metar:
             wind_dir_degrees = metar['wind_dir_degrees']
             wind_speed_kt = metar['wind_speed_kt']
@@ -437,10 +438,11 @@ class Cache(object):
             if wind_gust_kt == '': wind_gust_kt = '0'
 
             try:
-                wind_dir_degrees = int(wind_dir_degrees)
-                wind_speed_kt = int(wind_speed_kt)
-                wind_gust_kt = int(wind_gust_kt)
+                wind_dir_degrees = int(float(wind_dir_degrees))
+                wind_speed_kt = int(float(wind_speed_kt))
+                wind_gust_kt = int(float(wind_gust_kt))
             except:
+                Log.Log_Exception()
                 metar = None
 
         if metar:

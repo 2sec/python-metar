@@ -10,6 +10,7 @@ from datetime import timedelta
 
 import dataset
 import utils
+import Log
 
 
 app = Flask(__name__, static_folder='static', static_url_path='')
@@ -75,8 +76,10 @@ def airports(template = 'airports.html', remove_airport = None, add_airport = No
 
     airport_winds = []
     airports = []
+
     for airport in selected_airports:
         airport = dataset.cache.airports_ident.get(airport, None)
+
         if airport:
             airport_winds.append(dataset.cache.calc_wind(airport))
             airports.append(airport)
