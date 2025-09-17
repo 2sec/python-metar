@@ -95,7 +95,7 @@ def download_aviationweather_csv(filename):
         content = content.decode('utf-8')
 
         # new 9/2025 see above
-        df = pd.read_xml(content, xpath = "/response/data/*")
+        df = pd.read_xml(content, xpath = "/response/data/*", dtype="str")
         content = df.to_csv(index=False)
         filename = filename.replace(".xml", ".csv")
         
@@ -438,9 +438,9 @@ class Cache(object):
             if wind_gust_kt == '': wind_gust_kt = '0'
 
             try:
-                wind_dir_degrees = int(float(wind_dir_degrees))
-                wind_speed_kt = int(float(wind_speed_kt))
-                wind_gust_kt = int(float(wind_gust_kt))
+                wind_dir_degrees = int(wind_dir_degrees)
+                wind_speed_kt = int(wind_speed_kt)
+                wind_gust_kt = int(wind_gust_kt)
             except:
                 Log.Log_Exception()
                 metar = None
