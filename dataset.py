@@ -11,6 +11,10 @@ import gzip
 
 from datetime import datetime
 
+import pandas as pd
+from lxml import etree
+
+
 
 # this dict contains the last modification dates of all the files kept in memory
 last_modified_dic = {}
@@ -75,8 +79,13 @@ def read_csv_if_newer(filename,  output_list, fields, quoting):
 def download_aviationweather_csv(filename):
     # new 10/2023 (gz)
     base_url = 'https://aviationweather.gov/data/cache/'
+
+    # new 9/2025 the CSV format  for the TAF is no longer available
+    # so the XML format is used instead, then converted back to CSV
+    filename = filename.replace(".csv", ".xml")
     
     url = base_url + filename
+
 
     new_last_modified = utils.tmp_read(filename)
 
@@ -84,19 +93,27 @@ def download_aviationweather_csv(filename):
     if modified:
         content = gzip.decompress(response.content)
         content = content.decode('utf-8')
-        #default debug header:
-        #No errors
-        #No warnings
-        #474 ms
-        #data source=metars
-        #4809 results
 
-        n = -1
-        for i in range(0,5):
-            n = content.index('\n', n+1)
-        debug_header = content[0:n]
+        # new 9/2025 see above
+        df = pd.read_xml(content, xpath = "/response/data/*")
+        content = df.to_csv(index=False)
+        filename = filename.replace(".xml", ".csv")
+        
+        # no longer used since 9/2025
+        if False:
+            #default debug header:
+            #No errors
+            #No warnings
+            #474 ms
+            #data source=metars
+            #4809 results
 
-        content = content[n+1:]
+            n = -1
+            for i in range(0,5):
+                n = content.index('\n', n+1)
+            debug_header = content[0:n]
+
+            content = content[n+1:]
 
         #upload the new file
         utils.cloud_upload_text(filename, content)
@@ -130,7 +147,7 @@ def download_ourairports_csv(filename):
 
 def download_metar_stations(filename):
     # new 10/2023
-    url = 'http://www.weathergraphics.com/identifiers/master-location-identifier-database-202307_standard.csv'
+    url = 'https://www.weathergraphics.com/identifiers/master-location-identifier-database-202307_standard.csv'
     
 
     # TODO: test if the url has changed
@@ -346,8 +363,17 @@ class Cache(object):
         for metar in metars:
             raw_text = metar['raw_text']
             # this happens
-            if raw_text[0] == '"': raw_text = metar['raw_text'] = raw_text[1:]
+            if raw_text[0] == '\x0a': raw_text = raw_text[1:]
+            if raw_text[0] == '"': raw_text = raw_text[1:]
             metar['diff'] = ''
+            metar['raw_text'] = raw_text
+
+            
+            if not raw_text.startswith('METAR '): 
+                Log.Write("INV %s" % raw_text)
+                continue
+
+            raw_text = raw_text[6:]
 
             try:
                 day = int(raw_text[5:7])
@@ -361,6 +387,7 @@ class Cache(object):
                 metar['diff'] = diff
                 metar['valid'] = str(diff < 35)
             except:
+                Log.Log_Exception()
                 Log.Write('Invalid METAR %s' % raw_text)
 
 

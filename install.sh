@@ -22,13 +22,13 @@ sudo cp python-metar.service /etc/systemd/system/
 sudo systemctl enable python-metar
 sudo systemctl start python-metar
 sudo systemctl status python-metar
-sudo journalctl -u python-metar
+sudo journalctl -r -u python-metar
 
 
 sudo systemctl enable nginx
 sudo systemctl restart nginx
 sudo systemctl status nginx
-sudo journalctl -u nginx
+sudo journalctl -r -u nginx
 
 sudo nginx -t
 

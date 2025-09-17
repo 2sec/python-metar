@@ -1,5 +1,7 @@
 Flask
 requests
 gunicorn 
-google-cloud-storage
 boto3
+pandas
+lxml
+
