@@ -366,7 +366,6 @@ class Cache(object):
             if raw_text[0] == '\x0a': raw_text = raw_text[1:]
             if raw_text[0] == '"': raw_text = raw_text[1:]
             metar['diff'] = ''
-            metar['raw_text'] = raw_text
 
             
             if not raw_text.startswith('METAR '): 
@@ -374,6 +373,7 @@ class Cache(object):
                 continue
 
             raw_text = raw_text[6:]
+            metar['raw_text'] = raw_text
 
             try:
                 day = int(raw_text[5:7])
